@@ -7,8 +7,8 @@
     <RootNamespace>CibMedia.AndroidTv</RootNamespace>
     <AssemblyName>CibMedia</AssemblyName>
     <ApplicationId>com.davitigg.cibmedia</ApplicationId>
-    <ApplicationVersion>2</ApplicationVersion>
-    <ApplicationDisplayVersion>2.0</ApplicationDisplayVersion>
+    <ApplicationVersion>3</ApplicationVersion>
+    <ApplicationDisplayVersion>2.1</ApplicationDisplayVersion>
     <AndroidManifest>AndroidManifest.xml</AndroidManifest>
     <TrimMode>full</TrimMode>
     <!-- IL2104: the assemblies rooted below are kept whole on purpose. IL2026: the playback
