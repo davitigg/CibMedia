@@ -23,8 +23,8 @@ internal sealed class XpassPlaybackProvider(
     private const string OutageKey = "playback:xpass:unavailable";
 
     // A throttled wave throws, so empty means an absence or a redeployed player answering in a
-    // shape this cannot read. The second would hide a title for hours at the source TTL.
-    private static readonly TimeSpan Empty = ITmdbPlaybackProvider.OutageTtl;
+    // shape this cannot read. The second would hide a title for the sitting at the source TTL.
+    private static readonly TimeSpan Empty = ITmdbPlaybackProvider.AbsentTtl;
 
     public PlaybackProvider Provider => PlaybackProvider.Xpass;
 
@@ -93,9 +93,11 @@ internal sealed class XpassPlaybackProvider(
         }
         catch (Exception exception) when (exception.IsUpstreamFault(cancellationToken))
         {
-            cache.Set(OutageKey, true, ITmdbPlaybackProvider.OutageTtl);
+            var window = ITmdbPlaybackProvider.OutageFor(exception);
 
-            logger.ProviderOutageOpened(Provider, ITmdbPlaybackProvider.OutageTtl, exception);
+            cache.Set(OutageKey, true, window);
+
+            logger.ProviderOutageOpened(Provider, window, exception);
 
             throw;
         }

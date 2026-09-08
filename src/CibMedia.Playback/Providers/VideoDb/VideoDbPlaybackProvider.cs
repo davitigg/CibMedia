@@ -19,7 +19,7 @@ internal sealed partial class VideoDbPlaybackProvider(
     private const string OutageKey = "playback:videodb:unavailable";
 
     // An absence is held only until the next recheck, never for as long as a resolved lookup.
-    private static readonly TimeSpan Absent = ITmdbPlaybackProvider.OutageTtl;
+    private static readonly TimeSpan Absent = ITmdbPlaybackProvider.AbsentTtl;
 
     public PlaybackProvider Provider => PlaybackProvider.VideoDb;
 
@@ -81,9 +81,11 @@ internal sealed partial class VideoDbPlaybackProvider(
         }
         catch (Exception exception) when (exception.IsUpstreamFault(cancellationToken))
         {
-            cache.Set(OutageKey, true, ITmdbPlaybackProvider.OutageTtl);
+            var window = ITmdbPlaybackProvider.OutageFor(exception);
 
-            logger.ProviderOutageOpened(Provider, ITmdbPlaybackProvider.OutageTtl, exception);
+            cache.Set(OutageKey, true, window);
+
+            logger.ProviderOutageOpened(Provider, window, exception);
 
             throw;
         }
