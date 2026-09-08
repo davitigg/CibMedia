@@ -11,12 +11,13 @@ internal static partial class PlaybackLog
     [LoggerMessage(
         EventId = 1001,
         Level = LogLevel.Information,
-        Message = "playback for {Lookup}: {SourceCount} of {ProviderCount} provider(s) answered in {ElapsedMs}ms")]
+        Message = "playback for {Lookup}: {SourceCount} of {ProviderCount} provider(s) answered ({Tally}) in {ElapsedMs}ms")]
     public static partial void PlaybackResolved(
         this ILogger logger,
         string lookup,
         int sourceCount,
         int providerCount,
+        string tally,
         long elapsedMs
     );
 
@@ -93,6 +94,14 @@ internal static partial class PlaybackLog
         Level = LogLevel.Debug,
         Message = "xpass server {Server} did not verify")]
     public static partial void XpassServerUnverified(this ILogger logger, string? server, Exception exception);
+
+    // A server the wave cut off is dropped as silently as one that failed, and the count that
+    // reaches the player is the only other place it would show.
+    [LoggerMessage(
+        EventId = 2008,
+        Level = LogLevel.Debug,
+        Message = "xpass server {Server} did not finish before the wave deadline")]
+    public static partial void XpassServerUnfinished(this ILogger logger, string? server);
 
     // Debug: liveball mints tokens for dark channels too, so an edge that cannot be reached is the
     // ordinary shape of a channel being off air.

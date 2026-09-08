@@ -58,9 +58,16 @@ public sealed class TmdbPlaybackService
             return null;
         }
 
-        _logger.PlaybackResolved(lookup, sources.Count, _enabled.Count, elapsed);
+        _logger.PlaybackResolved(lookup, sources.Count, _enabled.Count, Tally(sources), elapsed);
 
         return new ResolvedPlayback(mediaType, sources, degraded);
+    }
+
+    // What each stack carried, not just that it answered: a stack down to one stream where it
+    // usually offers several is a probe that ran out of time, and nothing else records that.
+    private static string Tally(List<PlaybackSource> sources)
+    {
+        return string.Join(", ", sources.Select(source => $"{source.Provider} {source.Streams.Count}"));
     }
 
     // One stack being down degrades the response instead of failing it, and saying so is what

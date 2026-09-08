@@ -27,11 +27,12 @@ internal sealed class XpassStreamResolver(HttpClient http, XpassOptions options,
     // Verifying a server is four sequential hops: playlist, master, variant, segment. Candidates
     // run as one concurrent wave, so the wave deadline is the ceiling a cold miss can add to the
     // response. The hop timeout is what stops a host that never answers from holding the wave at
-    // that ceiling on its own. It must clear the slowest hop a good server makes: a LUL master on
-    // a cold Cloudflare worker measures ~1.25s alone and ~1.5s inside the wave, and a tighter
-    // timeout was found to drop those servers rather than the hanging ones.
-    private static readonly TimeSpan HopTimeout = TimeSpan.FromSeconds(2);
-    private static readonly TimeSpan WaveDeadline = TimeSpan.FromSeconds(3);
+    // that ceiling on its own, and it is measured on the box rather than on a desktop: a LUL
+    // master on a cold Cloudflare worker clears two seconds from a desktop but not from the box,
+    // where at that budget every LUL server failed a hop and xpass offered the fastest server
+    // alone. At four the same title offers four.
+    private static readonly TimeSpan HopTimeout = TimeSpan.FromSeconds(4);
+    private static readonly TimeSpan WaveDeadline = TimeSpan.FromSeconds(6);
 
     // Ordering only; correctness comes from the byte check. Names seen serving clean HLS go first,
     // names seen serving PNG-wrapped HLS last. The MP4-only classes (BOX, BIG, MIX, ZUR) are left
@@ -95,8 +96,8 @@ internal sealed class XpassStreamResolver(HttpClient http, XpassOptions options,
         catch (Exception exception) when (IsServerFault(exception))
         {
             // The wave ending is not the server's fault; a hop timing out is.
-            if (!cancellationToken.IsCancellationRequested)
-                logger.XpassServerUnverified(server.Name, exception);
+            if (cancellationToken.IsCancellationRequested) logger.XpassServerUnfinished(server.Name);
+            else logger.XpassServerUnverified(server.Name, exception);
 
             return null;
         }
