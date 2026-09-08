@@ -1,10 +1,10 @@
 {
-  "versionCode": 3,
-  "versionName": "2.1",
-  "apkUrl": "https://github.com/davitigg/CibMedia/releases/download/v2.1/cibmedia-2.1.apk",
-  "sha256": "1830cc0ddf148516225709417dcf5eda1bef3432960a01bee2c8d9a935420896",
-  "sizeBytes": 27407593,
-  "notes": "Software update card, longer upstream timeouts.",
+  "versionCode": 4,
+  "versionName": "2.2",
+  "apkUrl": "https://github.com/davitigg/CibMedia/releases/download/v2.2/cibmedia-2.2.apk",
+  "sha256": "53870dc0511e7945c3b2fad6ff4652e2804481dfeaf6495f35adff04d851e88b",
+  "sizeBytes": 27014859,
+  "notes": "Playback fixes.",
   "playback": {
     "videoDb": {
       "enabled": true,
