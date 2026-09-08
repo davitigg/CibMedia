@@ -7,5 +7,6 @@ public enum SettingsActionId
     DisplaySize,
     Preferences,
     ClearCache,
-    ClearHistory
+    ClearHistory,
+    Updates
 }

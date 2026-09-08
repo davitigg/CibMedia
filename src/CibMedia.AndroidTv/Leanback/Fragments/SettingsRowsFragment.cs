@@ -27,6 +27,9 @@ public sealed class SettingsRowsFragment : RowsSupportFragment
     private const int KeysIndex = 3;
     private const int CacheIndex = 4;
     private const int HistoryIndex = 5;
+    private const int UpdatesIndex = 6;
+
+    private bool _checking;
 
     // Static because Resize tears the Activity down, and the flag has to reach the next one.
     private static bool _resumeOnDisplayCard;
@@ -63,6 +66,7 @@ public sealed class SettingsRowsFragment : RowsSupportFragment
         _actions.Add(JavaRef.Wrap(KeysCard()));
         _actions.Add(JavaRef.Wrap(ClearCacheCard(null)));
         _actions.Add(JavaRef.Wrap(ClearHistoryCard(null)));
+        _actions.Add(JavaRef.Wrap(UpdatesCard(null)));
 
         var rows = new ArrayObjectAdapter(RowPresenters.Standard());
         rows.Add(new ListRow(new HeaderItem(0, GetString(ResourceConstant.String.settings_title)), _actions));
@@ -134,6 +138,9 @@ public sealed class SettingsRowsFragment : RowsSupportFragment
                 break;
             case SettingsActionId.ClearHistory:
                 _ = ClearHistoryAsync();
+                break;
+            case SettingsActionId.Updates:
+                _ = CheckForUpdatesAsync();
                 break;
         }
     }
@@ -283,6 +290,56 @@ public sealed class SettingsRowsFragment : RowsSupportFragment
             GetString(ResourceConstant.String.settings_clear_cache),
             subtitle ?? GetString(ResourceConstant.String.settings_measuring),
             ResourceConstant.Drawable.ic_delete_sweep);
+    }
+
+    // Asked for, so the interval does not apply; the flag is what stops a second press fetching again.
+    private async Task CheckForUpdatesAsync()
+    {
+        if (_checking || _actions is not { } actions || Context is not { } context) return;
+
+        _checking = true;
+
+        var updates = AppServices.Provider.GetRequiredService<AppUpdateCheck>();
+
+        actions.Replace(UpdatesIndex, JavaRef.Wrap(UpdatesCard(GetString(ResourceConstant.String.settings_updates_checking))));
+
+        try
+        {
+            var outcome = await updates.CheckAsync(force: true);
+
+            if (!IsAdded || Context is not { } current) return;
+
+            actions.Replace(UpdatesIndex, JavaRef.Wrap(UpdatesCard(null)));
+
+            switch (outcome)
+            {
+                case UpdateCheckResult.Offered:
+                    StartActivity(new Intent(current, typeof(UpdateActivity)));
+                    break;
+                case UpdateCheckResult.UpToDate:
+                    Toasts.Show(current, ResourceConstant.String.update_up_to_date, ToastLength.Short);
+                    break;
+                default:
+                    Toasts.Show(current, ResourceConstant.String.update_check_failed, ToastLength.Long);
+                    break;
+            }
+        }
+        finally
+        {
+            _checking = false;
+        }
+    }
+
+    private SettingsAction UpdatesCard(string? subtitle)
+    {
+        return new SettingsAction(
+            SettingsActionId.Updates,
+            GetString(ResourceConstant.String.settings_updates),
+            subtitle ?? Strings.Format(
+                RequireContext(),
+                ResourceConstant.String.settings_updates_version,
+                AppServices.Provider.GetRequiredService<AppUpdateCheck>().InstalledVersionName),
+            ResourceConstant.Drawable.ic_update);
     }
 
     private SettingsAction ClearHistoryCard(string? subtitle)

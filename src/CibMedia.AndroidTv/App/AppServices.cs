@@ -37,13 +37,13 @@ public static class AppServices
     {
         var services = new ServiceCollection();
 
-        // Everything the resolvers say, and nothing from the request pipeline they run on: the
-        // handler logs every hop at information, which buries the outcome it is wrapped around.
+        // The noise is named, not the app: naming only the categories to keep left a trimmed build
+        // mute, with nothing to read when playback failed on it.
         services.AddLogging(logging => logging
             .AddProvider(new LogcatLoggerProvider())
-            .SetMinimumLevel(LogLevel.Warning)
-            .AddFilter("CibMedia.Playback", LogLevel.Debug)
-            .AddFilter("CibMedia.AndroidTv", LogLevel.Debug));
+            .SetMinimumLevel(LogLevel.Debug)
+            .AddFilter("Microsoft", LogLevel.Warning)
+            .AddFilter("System", LogLevel.Warning));
 
         services.AddPlayback(PlaybackConfig.Read(context));
 
@@ -62,9 +62,10 @@ public static class AppServices
 
         // Two clients on purpose: the manifest is small and worth giving up on quickly, an apk
         // is tens of megabytes over whatever the box is on.
-        services.AddSingleton<IAppUpdates>(_ => new AppUpdatesClient(
+        services.AddSingleton<IAppUpdates>(sp => new AppUpdatesClient(
             new HttpClient { Timeout = TimeSpan.FromSeconds(10) },
-            ManifestUrl));
+            ManifestUrl,
+            sp.GetRequiredService<ILogger<AppUpdatesClient>>()));
         services.AddSingleton<IAppUpdatePreferences>(_ => new PreferencesAppUpdates(context));
         services.AddSingleton(sp => new AppUpdateCheck(
             context,

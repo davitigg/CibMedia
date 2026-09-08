@@ -1,12 +1,14 @@
 using System.Text.Json;
 using CibMedia.Core.Abstractions;
 using CibMedia.Core.Updates;
+using Microsoft.Extensions.Logging;
 
 namespace CibMedia.Core.Infrastructure.Updates;
 
 // Read field by field rather than deserialised: the playback block has to survive as the text it
 // was published as, and a manifest that gains a field must not fail the boxes that predate it.
-public sealed class AppUpdatesClient(HttpClient client, Uri manifestUrl) : IAppUpdates
+public sealed class AppUpdatesClient(HttpClient client, Uri manifestUrl, ILogger<AppUpdatesClient> log)
+    : IAppUpdates
 {
     public async Task<AppManifest?> ReadAsync(CancellationToken ct)
     {
@@ -17,6 +19,8 @@ public sealed class AppUpdatesClient(HttpClient client, Uri manifestUrl) : IAppU
         catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException
                                               or JsonException or InvalidOperationException)
         {
+            log.LogWarning(exception, "The manifest at {Url} could not be read.", manifestUrl);
+
             return null;
         }
     }

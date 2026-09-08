@@ -21,9 +21,11 @@ namespace CibMedia.AndroidTv.Activities;
     Categories = [Intent.CategoryLeanbackLauncher])]
 public sealed class MainActivity : FragmentHostActivity, IKeySetupHost
 {
-    protected override void OnCreate(Bundle? savedInstanceState)
+    // Every return to the front, not only a cold start: a box that is never killed would otherwise
+    // never hear about a release. The check keeps its own interval, so this costs nothing.
+    protected override void OnResume()
     {
-        base.OnCreate(savedInstanceState);
+        base.OnResume();
 
         // The base finishes a duplicate shell before it builds anything to ask.
         if (IsFinishing) return;
@@ -31,13 +33,12 @@ public sealed class MainActivity : FragmentHostActivity, IKeySetupHost
         _ = OfferUpdateAsync();
     }
 
-    // The manifest is read while the shell draws, so nothing here waits on it. A release worth
-    // offering opens over what has already been drawn.
+    // Read while the shell draws, so nothing waits on it: an offer opens over what is already there.
     private async Task OfferUpdateAsync()
     {
-        if (!await AppServices.Provider.GetRequiredService<AppUpdateCheck>().RunOnceAsync()) return;
+        var outcome = await AppServices.Provider.GetRequiredService<AppUpdateCheck>().CheckAsync(force: false);
 
-        if (IsFinishing || IsDestroyed) return;
+        if (outcome is not UpdateCheckResult.Offered || IsFinishing || IsDestroyed) return;
 
         StartActivity(new Intent(this, typeof(UpdateActivity)));
     }
