@@ -12,7 +12,9 @@ namespace CibMedia.Playback;
 
 public static class PlaybackDependencyInjection
 {
-    private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(4);
+    // Stacks are raced, so this is what one slow upstream costs the whole lookup rather than what
+    // each adds. At four seconds a liveball page over wifi timed out, which reads as nothing on air.
+    private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(15);
 
     private static string Required(string value, string name)
     {
@@ -154,7 +156,7 @@ public static class PlaybackDependencyInjection
                 .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
                 {
                     PooledConnectionLifetime = TimeSpan.FromMinutes(10),
-                    ConnectTimeout = TimeSpan.FromSeconds(2)
+                    ConnectTimeout = TimeSpan.FromSeconds(5)
                 })
                 .SetHandlerLifetime(Timeout.InfiniteTimeSpan);
         }
