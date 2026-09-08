@@ -21,8 +21,10 @@
   <ItemGroup>
     <TrimmerRootAssembly Include="CibMedia.Core" RootMode="library" />
     <!-- playback.json and every upstream shape are read reflectively, so nothing here is safe
-         for the linker to judge unused. -->
-    <TrimmerRootAssembly Include="CibMedia.Playback" RootMode="library" />
+         for the linker to judge unused. "library" is not enough: the wire models are internal,
+         so it keeps the types and still trims the constructors System.Text.Json needs, which
+         throws DeserializeNoConstructor in Release only. -->
+    <TrimmerRootAssembly Include="CibMedia.Playback" RootMode="all" />
     <!-- TMDbLib deserialises with Newtonsoft, which finds properties by reflection; trimmed,
          every TMDb response comes back with its fields defaulted, in Release only. -->
     <TrimmerRootAssembly Include="TMDbLib" RootMode="library" />
