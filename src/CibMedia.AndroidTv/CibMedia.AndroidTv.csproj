@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>net10.0-android</TargetFramework>
     <!-- Media3's floor, and what the cheap TV boxes this targets run. -->
@@ -7,47 +6,36 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>CibMedia.AndroidTv</RootNamespace>
     <AssemblyName>CibMedia</AssemblyName>
-
     <ApplicationId>com.davitigg.cibmedia</ApplicationId>
-    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationVersion>2</ApplicationVersion>
     <ApplicationDisplayVersion>2.0</ApplicationDisplayVersion>
-
     <AndroidManifest>AndroidManifest.xml</AndroidManifest>
-
     <TrimMode>full</TrimMode>
-
     <!-- IL2104: the assemblies rooted below are kept whole on purpose. IL2026: the playback
          resolvers read upstream JSON reflectively. -->
     <NoWarn>$(NoWarn);IL2104;IL2026</NoWarn>
-
     <!-- Trimming turns this off by default, and System.Text.Json then throws for the upstream
          shapes the resolvers read, in Release only. -->
     <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
-
   <ItemGroup>
     <TrimmerRootAssembly Include="CibMedia.Core" RootMode="library" />
-
     <!-- playback.json and every upstream shape are read reflectively, so nothing here is safe
          for the linker to judge unused. -->
     <TrimmerRootAssembly Include="CibMedia.Playback" RootMode="library" />
-
     <!-- TMDbLib deserialises with Newtonsoft, which finds properties by reflection; trimmed,
          every TMDb response comes back with its fields defaulted, in Release only. -->
     <TrimmerRootAssembly Include="TMDbLib" RootMode="library" />
     <TrimmerRootAssembly Include="Newtonsoft.Json" RootMode="library" />
   </ItemGroup>
-
   <!-- Debug also carries the x86 ABIs for the emulator; Release ships ARM only. -->
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
     <RuntimeIdentifiers>android-arm;android-arm64;android-x86;android-x64</RuntimeIdentifiers>
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
     <RuntimeIdentifiers>android-arm;android-arm64</RuntimeIdentifiers>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Xamarin.Android.Glide" />
@@ -58,13 +46,10 @@
     <PackageReference Include="Xamarin.AndroidX.Media3.Ui" />
     <PackageReference Include="QRCoder" />
   </ItemGroup>
-
   <ItemGroup>
     <AndroidAsset Include="../CibMedia.Playback/playback.json" Link="playback.json" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="../CibMedia.Core/CibMedia.Core.csproj" />
   </ItemGroup>
-
 </Project>
