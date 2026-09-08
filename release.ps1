@@ -85,12 +85,15 @@ Write-Host "=== $apk"
 Write-Host "=== sha256 $sha256"
 
 if ($PSCmdlet.ShouldProcess($tag, 'publish the release and push manifest.json')) {
-    gh release create $tag $apk --repo $repository --title $tag --notes $Notes
-    if ($LASTEXITCODE -ne 0) { throw 'Publishing the release failed.' }
-
+    # Pushed before the release is cut: gh tags whatever the remote head is, so a release created
+    # first is tagged against the commit before the one it was built from.
     git add $project $manifestPath
     git commit -m "Release $VersionName"
     git push
+    if ($LASTEXITCODE -ne 0) { throw 'Pushing the release commit failed.' }
+
+    gh release create $tag $apk --repo $repository --title $tag --notes $Notes
+    if ($LASTEXITCODE -ne 0) { throw 'Publishing the release failed: manifest.json now names an apk that is not there.' }
 
     Write-Host '=== Published. Boxes are offered it on their next launch.'
 }
