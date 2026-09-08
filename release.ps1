@@ -65,8 +65,10 @@ if ($LASTEXITCODE -ne 0) { throw 'The release build failed.' }
 $built = 'src/CibMedia.AndroidTv/bin/Release/net10.0-android/com.davitigg.cibmedia-Signed.apk'
 $apk = "artifacts/cibmedia-$VersionName.apk"
 
-New-Item -ItemType Directory -Force artifacts | Out-Null
-Copy-Item $built $apk -Force
+# -WhatIf:$false on both: the apk is what the hash and the size below describe, so a dry run that
+# skipped the copy could not write the manifest it exists to show.
+New-Item -ItemType Directory -Force artifacts -WhatIf:$false | Out-Null
+Copy-Item $built $apk -Force -WhatIf:$false
 
 $sha256 = (Get-FileHash $apk -Algorithm SHA256).Hash.ToLowerInvariant()
 
@@ -79,7 +81,7 @@ $manifest.apkUrl = "https://github.com/$repository/releases/download/$tag/$(Spli
 $manifest.sha256 = $sha256
 $manifest.sizeBytes = (Get-Item $apk).Length
 $manifest.notes = $Notes
-$manifest | ConvertTo-Json -Depth 10 | Set-Content $manifestPath -Encoding utf8
+$manifest | ConvertTo-Json -Depth 10 | Set-Content $manifestPath -Encoding utf8 -WhatIf:$false
 
 Write-Host "=== $apk"
 Write-Host "=== sha256 $sha256"
