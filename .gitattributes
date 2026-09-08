@@ -1,0 +1,9 @@
+# Every text file is stored and checked out with LF. Without this, Windows checkouts
+# rewrite the whole tree to CRLF and the first commit from any other platform shows every
+# file as modified.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.keystore binary
+*.jks binary

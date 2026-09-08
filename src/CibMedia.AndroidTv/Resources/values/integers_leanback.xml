@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?><!-- Overrides of Leanback's own integers. -->
+<resources>
+  <!-- The stock three reserved lines leave a block of empty space under a short overview. -->
+  <integer name="lb_details_description_body_min_lines">1</integer>
+  <integer name="lb_details_description_body_max_lines">3</integer>
+  <!-- The meta line wraps so the genres sit under the year and rating. -->
+  <integer name="lb_details_description_subtitle_max_lines">3</integer>
+</resources>

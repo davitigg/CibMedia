@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- Leanback's own theme is the parent: its fragments resolve row heights, header widths and
+       focus dimming from lb* attributes that only exist on it. -->
+  <style name="Theme.CibMedia" parent="@style/Theme.Leanback">
+    <item name="android:windowBackground">@color/bg_base</item>
+    <item name="android:colorBackground">@color/bg_base</item>
+    <item name="android:textColorPrimary">@color/text_primary</item>
+    <item name="android:textColorSecondary">@color/text_secondary</item>
+
+    <!-- The search field's caret and selection handles, invisible at the platform accent. -->
+    <item name="android:colorControlActivated">@color/text_primary</item>
+  </style>
+
+  <style name="Theme.CibMedia.Details" parent="@style/Theme.Leanback.Details">
+    <item name="android:windowBackground">@color/bg_base</item>
+    <item name="android:colorBackground">@color/bg_base</item>
+    <item name="android:textColorPrimary">@color/text_primary</item>
+    <item name="android:textColorSecondary">@color/text_secondary</item>
+  </style>
+
+  <!-- GuidedStepSupportFragment reads guidedStep* attributes that Theme.Leanback lacks. -->
+  <style name="Theme.CibMedia.GuidedStep" parent="@style/Theme.Leanback.GuidedStep">
+    <item name="android:windowBackground">@color/bg_base</item>
+    <item name="android:colorBackground">@color/bg_base</item>
+    <item name="android:textColorPrimary">@color/text_primary</item>
+    <item name="android:textColorSecondary">@color/text_secondary</item>
+    <item name="android:colorControlActivated">@color/text_primary</item>
+  </style>
+
+  <!-- The player owns the whole window; Leanback's browse chrome is dead weight behind it. -->
+  <style name="Theme.CibMedia.Playback" parent="@android:style/Theme.Material.NoActionBar">
+    <item name="android:windowBackground">@android:color/black</item>
+
+    <!-- PlayerView draws into a SurfaceView the compositor owns in its own layer, so a window
+         exit animation takes the letterbox bars away and leaves the picture behind for a frame. -->
+    <item name="android:windowAnimationStyle">@null</item>
+  </style>
+</resources>

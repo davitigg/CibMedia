@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- FragmentManager restores a fragment into the container id it recorded, and a generated
+       id is different on the next process. -->
+  <item name="content_host" type="id" />
+
+  <!-- Stable ids for views added to Leanback's own layouts at runtime, so a restarted fragment
+       or a recycled card can be asked whether it already has one. -->
+  <item name="headers_brand" type="id" />
+  <item name="card_badge" type="id" />
+
+</resources>

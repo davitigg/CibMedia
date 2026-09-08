@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">CibMedia</string>
+
+  <string name="update_title">Update available</string>
+  <string name="update_install">Update now</string>
+  <string name="update_later">Not now</string>
+  <string name="update_downloading">Downloading…</string>
+  <string name="update_failed">The update could not be installed.</string>
+  <string name="update_download_failed">The update could not be downloaded.</string>
+  <string name="update_allow_installs">Allow CibMedia to install apps, then choose Update again.</string>
+
+  <string name="rail_continue">Continue Watching</string>
+  <string name="rail_trending">Trending Now</string>
+  <string name="rail_popular_movies">Popular Movies</string>
+  <string name="rail_top_rated_movies">Top Rated Movies</string>
+  <string name="rail_popular_tv">Popular TV Shows</string>
+  <string name="rail_top_rated_tv">Top Rated TV Shows</string>
+  <string name="rail_trending_week">Trending This Week</string>
+  <string name="rail_action_adventure">Action &amp; Adventure</string>
+  <string name="rail_comedy">Comedy</string>
+  <string name="rail_drama">Drama</string>
+  <string name="rail_crime_thriller">Crime &amp; Thriller</string>
+  <string name="rail_crime_mystery">Crime &amp; Mystery</string>
+  <string name="rail_scifi_fantasy">Sci-Fi &amp; Fantasy</string>
+  <string name="rail_horror">Horror</string>
+  <string name="rail_romance">Romance</string>
+  <string name="rail_family_animation">Family &amp; Animation</string>
+  <string name="rail_animation_kids">Animation &amp; Kids</string>
+  <string name="rail_reality_talk">Reality &amp; Talk</string>
+
+  <string name="rail_recommendations">More Like This</string>
+  <string name="rail_cast">Cast</string>
+  <string name="rail_seasons">Seasons</string>
+  <string name="rail_episodes">Episodes</string>
+  <string name="rail_episodes_of_season">Season %1$d Episodes</string>
+
+  <string name="state_offline">No connection</string>
+  <string name="state_timeout">Took too long</string>
+  <string name="state_not_found">Nothing here</string>
+  <string name="state_error">Something went wrong</string>
+
+  <string name="search_results">Results</string>
+
+  <string name="setup_title">Set up your TV</string>
+  <string name="setup_description">Two keys and you are in: TMDb for the catalogue, CibMedia for playback</string>
+  <string name="setup_description_handoff">Scan with your phone to paste your keys</string>
+  <string name="setup_tmdb_label">TMDb API key</string>
+  <!-- Under each field until that key has been tried: where it comes from. -->
+  <string name="setup_tmdb_hint">themoviedb.org/settings/api</string>
+  <string name="setup_cibmedia_hint">Ask a friend</string>
+  <string name="setup_key_set">Saved</string>
+  <string name="setup_key_checking">Checking…</string>
+  <!-- Refused is the user's to fix; unreachable is the network's. -->
+  <string name="setup_key_rejected">Not correct</string>
+  <string name="setup_key_unreachable">No connection</string>
+  <string name="setup_save">Save</string>
+
+  <string name="settings_title">Settings</string>
+  <string name="device_title">Remote play</string>
+  <string name="device_off">Off</string>
+  <string name="device_address_unknown">No network</string>
+  <string name="keys_title">API keys</string>
+  <string name="keys_ready">TMDb key saved</string>
+  <string name="keys_missing_tmdb">TMDb key still needed</string>
+
+  <!-- Named steps rather than factors: how large a step ends up depends on the panel. -->
+  <string name="display_size_title">Display size</string>
+  <string name="preferences_title">Preferences</string>
+  <string name="preferences_description">Where a title plays from and the language it starts in. Both can still be changed from the player.</string>
+  <string name="provider_default_title">Default provider</string>
+  <string name="provider_default_none">First offered</string>
+  <string name="language_default_title">Language</string>
+  <string name="language_default_device">Device language</string>
+  <string name="display_size_smaller">Smaller</string>
+  <string name="display_size_small">Small</string>
+  <string name="display_size_normal">Normal</string>
+  <string name="display_size_large">Large</string>
+  <string name="display_size_larger">Larger</string>
+
+  <string name="settings_measuring">Checking…</string>
+  <string name="settings_clear_cache">Clear cache</string>
+  <string name="settings_clear_cache_size">%1$s of posters and listings</string>
+  <string name="settings_clear_cache_empty">Nothing cached</string>
+  <string name="settings_cache_cleared">Cache cleared</string>
+  <string name="settings_clear_history">Clear watch history</string>
+  <string name="settings_clear_history_empty">Nothing to forget</string>
+  <string name="settings_history_cleared">Watch history cleared</string>
+  <plurals name="settings_clear_history_count">
+    <item quantity="one">%1$d title remembered</item>
+    <item quantity="other">%1$d titles remembered</item>
+  </plurals>
+
+  <!-- Why a title would not start. Anything unclassified stays vague on purpose. -->
+  <string name="playback_not_available">Not available to watch right now</string>
+  <string name="playback_rejected">The source turned this request down</string>
+  <string name="playback_server">The playback service is having trouble — try again shortly</string>
+  <string name="playback_offline">Could not reach the playback service — check the connection</string>
+  <string name="playback_timeout">The playback service took too long to answer</string>
+  <string name="playback_failed">Could not start playback</string>
+  <string name="playback_provider_failed">Could not play from %1$s</string>
+  <string name="remote_unknown_id">Nothing on TMDb with id %1$d</string>
+  <string name="remote_catalogue_unreachable">Could not reach TMDb — check the connection</string>
+  <string name="playback_switched">Switched to %1$s</string>
+
+  <string name="section_home">Home</string>
+  <string name="section_movies">Movies</string>
+  <string name="section_tv_shows">TV Shows</string>
+
+  <string name="action_play">Play</string>
+  <string name="action_provider_pending">—</string>
+  <string name="action_provider_none">No stream</string>
+  <!-- %1$s is the episode label from Episode.LabelFor. -->
+  <string name="action_play_episode">Play %1$s</string>
+  <string name="action_resume">Resume</string>
+  <string name="action_resume_episode">Resume %1$s</string>
+  <!-- Appended only when the duration is known. -->
+  <string name="action_resume_left">%1$s · %2$s left</string>
+  <string name="action_minutes">%1$dm</string>
+  <string name="action_hours_minutes">%1$dh %2$dm</string>
+  <string name="action_play_from_start">Play from start</string>
+  <string name="action_streams">Streams</string>
+  <string name="action_provider">Provider</string>
+</resources>

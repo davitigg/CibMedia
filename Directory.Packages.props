@@ -1,0 +1,32 @@
+<Project>
+
+    <PropertyGroup>
+        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="10.0.11"/>
+        <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11"/>
+        <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.11"/>
+        <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="10.0.11"/>
+        <PackageVersion Include="TMDbLib" Version="3.0.0"/>
+    </ItemGroup>
+
+    <!-- Android head only. -->
+    <ItemGroup>
+        <PackageVersion Include="Xamarin.Android.Glide" Version="5.0.9"/>
+        <PackageVersion Include="Xamarin.AndroidX.RecyclerView" Version="1.4.0.6"/>
+        <PackageVersion Include="Xamarin.AndroidX.Leanback" Version="1.2.0.4"/>
+        <PackageVersion Include="Xamarin.AndroidX.Media3.ExoPlayer" Version="1.10.1.1"/>
+        <PackageVersion Include="Xamarin.AndroidX.Media3.ExoPlayer.Hls" Version="1.10.1.1"/>
+        <PackageVersion Include="Xamarin.AndroidX.Media3.Ui" Version="1.10.1.1"/>
+        <PackageVersion Include="QRCoder" Version="1.8.0"/>
+    </ItemGroup>
+
+    <ItemGroup Label="Tests">
+        <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1"/>
+        <PackageVersion Include="xunit.v3" Version="3.1.0"/>
+        <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.0"/>
+    </ItemGroup>
+
+</Project>

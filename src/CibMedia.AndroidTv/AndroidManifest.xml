@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+  <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+  <!-- The box installs its own updates: there is no store behind this build. Holding it is not
+       enough on its own, the user grants this app "install unknown apps" once as well. -->
+  <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+  <!-- The search screen's voice button; Leanback asks for it and drives the recognizer. -->
+  <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+  <!-- Without this SpeechRecognizer.isRecognitionAvailable returns false under package
+       visibility, and the voice button stays dead. -->
+  <queries>
+    <intent>
+      <action android:name="android.speech.RecognitionService" />
+    </intent>
+  </queries>
+
+  <uses-feature
+    android:name="android.software.leanback"
+    android:required="true" />
+  <uses-feature
+    android:name="android.hardware.touchscreen"
+    android:required="false" />
+
+  <!-- RECORD_AUDIO implies a required microphone, which would exclude every TV whose remote
+       has none. -->
+  <uses-feature
+    android:name="android.hardware.microphone"
+    android:required="false" />
+
+  <!-- Backup is off because the API keys are in shared preferences, and auto-backup would copy
+       them to Drive and hand them to anyone who can run adb backup. Predictive back is off
+       because Android 16 enables it for this target SDK, and it then stops delivering Back as a
+       key event: Leanback collapses an open list on that key, and without it Back leaves the
+       whole screen instead. -->
+  <application
+    android:allowBackup="false"
+    android:enableOnBackInvokedCallback="false"
+    android:banner="@drawable/banner"
+    android:icon="@mipmap/appicon"
+    android:label="@string/app_name"
+    android:roundIcon="@mipmap/appicon_round"
+    android:supportsRtl="true"
+    android:usesCleartextTraffic="true" />
+</manifest>

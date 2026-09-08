@@ -1,0 +1,32 @@
+# Build output
+bin/
+obj/
+artifacts/
+TestResults/
+*.binlog
+
+# Android packages and signing material
+*.apk
+*.aab
+*.keystore
+*.jks
+local.properties
+
+# IDE and editor state
+.idea/
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Local scratch: emulator screenshots, view-hierarchy dumps and helper scripts
+.tmp/
+*.screenshot.png
+*.ui.xml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# The release signing key, its passwords, and the notes that go with them.
+keystore/

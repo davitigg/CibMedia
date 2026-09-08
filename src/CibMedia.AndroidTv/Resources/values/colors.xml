@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <color name="bg_base">#14161C</color>
+  <color name="bg_surface">#1E212A</color>
+  <color name="bg_nav">#11131A</color>
+  <color name="bg_placeholder">#2A2F3B</color>
+
+  <color name="text_primary">#F2F4F8</color>
+  <color name="text_secondary">#A3AABC</color>
+  <color name="text_muted">#727B8F</color>
+
+  <color name="accent_brand">#4C8DFF</color>
+  <color name="accent_gold">#F5C518</color>
+
+  <!-- Leanback's own colours, overridden by name. Both card backgrounds are transparent: the
+       card one sits under the info strip, so clearing only the strip leaves a chip behind
+       every label. -->
+  <color name="lb_basic_card_bg_color">#00000000</color>
+  <color name="lb_basic_card_info_bg_color">#00000000</color>
+  <color name="lb_basic_card_title_text_color">@color/text_primary</color>
+  <color name="lb_basic_card_content_text_color">@color/text_secondary</color>
+  <color name="lb_browse_header_color">#F2F4F8</color>
+  <color name="lb_browse_title_color">#F2F4F8</color>
+  <color name="lb_details_overview_bg_color">#14161C</color>
+  <color name="lb_action_text_color">#F2F4F8</color>
+
+  <!-- A guided step paints an opened sub-action list on its own darker view, near black by
+       default; the card surface keeps it inside the palette. -->
+  <color name="lb_guidedactions_background_dark">@color/bg_surface</color>
+
+  <!-- The speech orb, matching the search orb on browse. Its recording red is left alone. -->
+  <color name="lb_speech_orb_not_recording">#2A2F3B</color>
+  <color name="lb_speech_orb_not_recording_icon">#F2F4F8</color>
+  <!-- Same as the resting colour so the orb does not pulse while focused. -->
+  <color name="lb_speech_orb_not_recording_pulsed">#2A2F3B</color>
+
+  <!-- Leanback's default typed text is 50% white, indistinguishable from the placeholder. -->
+  <color name="lb_search_bar_text">#F2F4F8</color>
+  <color name="lb_search_bar_hint">#9AA3B5</color>
+
+  <!-- Leanback swaps to these in speech mode, where it normally paints itself pale. -->
+  <color name="lb_search_bar_text_speech_mode">#F2F4F8</color>
+  <color name="lb_search_bar_hint_speech_mode">#9AA3B5</color>
+</resources>

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?><!-- Overrides of Leanback's own dimensions, resolved by name at merge time. Leanback's
+     defaults are sized for a launcher-scale app; everything here is the same layout at
+     roughly three-quarters scale, which leaves room for a six-column poster wall. -->
+<resources>
+  <!-- Side headers -->
+  <dimen name="lb_browse_headers_width">153dp</dimen>
+  <dimen name="lb_browse_header_text_size">14.5sp</dimen>
+  <dimen name="lb_browse_header_height">22.5dp</dimen>
+  <dimen name="lb_browse_headers_vertical_spacing">11.5dp</dimen>
+  <dimen name="lb_browse_header_padding_end">7dp</dimen>
+
+  <!-- Content area. rows_margin_start has to track the header width or the rows sit under
+       the headers when they are open. -->
+  <dimen name="lb_browse_rows_margin_start">133dp</dimen>
+  <dimen name="lb_browse_rows_margin_top">63dp</dimen>
+  <dimen name="lb_browse_padding_start">22.5dp</dimen>
+  <dimen name="lb_browse_padding_end">22.5dp</dimen>
+  <dimen name="lb_browse_padding_top">13.5dp</dimen>
+  <dimen name="lb_browse_padding_bottom">31.5dp</dimen>
+
+  <!-- The title bar holds nothing but the search orb. title_height is what the empty title
+       TextView still claims, so it sets where the orb sits. -->
+  <dimen name="lb_browse_title_height">31.5dp</dimen>
+  <dimen name="lb_browse_title_icon_height">31.5dp</dimen>
+  <dimen name="lb_browse_title_text_size">22.5sp</dimen>
+  <dimen name="lb_search_orb_size">31.5dp</dimen>
+
+  <!-- Search screen. The bar is placed so its microphone orb lands exactly where the search
+       orb sits on browse, so opening search reads as that button turning into the microphone.
+       orb top = padding_top + (items_height + inner margins - orb_size) / 2. -->
+  <dimen name="lb_search_bar_height">45dp</dimen>
+  <dimen name="lb_search_bar_items_height">31.5dp</dimen>
+  <dimen name="lb_search_bar_items_width">495dp</dimen>
+  <dimen name="lb_search_bar_items_margin_start">13.5dp</dimen>
+  <dimen name="lb_search_bar_items_layout_margin_top">13.5dp</dimen>
+  <dimen name="lb_search_bar_padding_top">11.5dp</dimen>
+  <dimen name="lb_search_bar_speech_orb_size">31.5dp</dimen>
+  <dimen name="lb_search_bar_speech_orb_margin_start">22.5dp</dimen>
+  <dimen name="lb_search_bar_padding_start">22.5dp</dimen>
+  <dimen name="lb_search_bar_icon_width">18dp</dimen>
+  <dimen name="lb_search_bar_icon_height">18dp</dimen>
+  <dimen name="lb_search_bar_icon_margin_start">11.5dp</dimen>
+  <dimen name="lb_search_bar_hint_margin_start">40.5dp</dimen>
+  <dimen name="lb_search_bar_text_size">13.5sp</dimen>
+  <!-- The stock 147dp is measured off a taller, lower bar and left a third of the screen
+       empty above the first card. -->
+  <dimen name="lb_search_browse_rows_align_top">85.5dp</dimen>
+  <dimen name="lb_search_bar_unfocused_text_size">13.5sp</dimen>
+
+  <!-- Rail spacing. Row titles share lb_browse_header_text_size with the side headers. -->
+  <dimen name="lb_browse_item_horizontal_spacing">13.5dp</dimen>
+  <dimen name="lb_browse_item_vertical_spacing">18dp</dimen>
+
+  <!-- ImageCardView's info strip. Nothing fills it, so its padding only holds the text off
+       the artwork. -->
+  <dimen name="lb_basic_card_title_text_size">11.5sp</dimen>
+  <dimen name="lb_basic_card_content_text_size">9.5sp</dimen>
+  <dimen name="lb_basic_card_info_height">29.5dp</dimen>
+  <dimen name="lb_basic_card_info_height_no_content">18dp</dimen>
+  <dimen name="lb_basic_card_info_padding_horizontal">9dp</dimen>
+  <dimen name="lb_basic_card_info_padding_top">3.5dp</dimen>
+  <dimen name="lb_basic_card_info_padding_bottom">2.5dp</dimen>
+
+  <!-- The classic details overview block. The stock side margin is twice the browse padding,
+       and the stock height leaves a screen of dead space above the Play button. -->
+  <dimen name="lb_details_overview_margin_start">22.5dp</dimen>
+  <dimen name="lb_details_overview_margin_end">22.5dp</dimen>
+  <dimen name="lb_details_overview_margin_bottom">27dp</dimen>
+  <dimen name="lb_details_overview_height_large">241dp</dimen>
+  <dimen name="lb_details_overview_height_small">148.5dp</dimen>
+  <dimen name="lb_details_overview_image_margin_horizontal">18dp</dimen>
+  <dimen name="lb_details_overview_image_margin_vertical">18dp</dimen>
+  <dimen name="lb_details_overview_action_items_spacing">11.5dp</dimen>
+
+  <!-- Action buttons. icon_margin is a fixed gap rather than a share of the width, so a
+       longer label grows the button instead of pushing the glyph and text apart. -->
+  <dimen name="lb_action_text_size">13.5sp</dimen>
+  <dimen name="lb_action_padding_horizontal">22.5dp</dimen>
+  <dimen name="lb_action_icon_margin">8dp</dimen>
+  <dimen name="lb_action_with_icon_padding_start">11.5dp</dimen>
+  <dimen name="lb_action_with_icon_padding_end">18dp</dimen>
+  <dimen name="lb_action_button_corner_radius">18dp</dimen>
+  <dimen name="lb_action_1_line_height">36dp</dimen>
+
+  <!-- Details header. -->
+  <dimen name="lb_details_description_title_text_size">25sp</dimen>
+  <dimen name="lb_details_description_title_resized_text_size">20.5sp</dimen>
+  <dimen name="lb_details_description_title_line_spacing">29.5dp</dimen>
+  <dimen name="lb_details_description_subtitle_text_size">12.5sp</dimen>
+  <dimen name="lb_details_description_body_text_size">11.5sp</dimen>
+  <dimen name="lb_details_description_body_line_spacing">17dp</dimen>
+  <dimen name="lb_details_description_title_baseline">22.5dp</dimen>
+  <dimen name="lb_details_description_under_title_baseline_margin">29.5dp</dimen>
+  <dimen name="lb_details_description_under_subtitle_baseline_margin">29.5dp</dimen>
+  <dimen name="lb_details_overview_actions_height">49.5dp</dimen>
+  <dimen name="lb_details_overview_description_margin_top">13.5dp</dimen>
+  <dimen name="lb_details_overview_description_margin_bottom">9dp</dimen>
+</resources>

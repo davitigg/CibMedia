@@ -1,0 +1,28 @@
+{
+  "videoDb": {
+    "enabled": true,
+    "hosts": [
+      "videodb.stream",
+      "em.kinoflix.co",
+      "em.filmix.stream"
+    ]
+  },
+  "xpass": {
+    "enabled": true,
+    "playerHost": "play.xpass.top",
+    "subtitleHost": "sub.1x2.space"
+  },
+  "liveball": {
+    "enabled": true,
+    "pageHosts": [
+      "liveball.sx"
+    ],
+    "keyPages": [
+      "https://liveball.sx/news/ufc",
+      "https://liveball.sx/news/tennis",
+      "https://liveball.sx/news/formula-1",
+      "https://liveball.sx/news/tennis-usopen",
+      "https://liveball.sx/news/tennis-usopen2"
+    ]
+  }
+}

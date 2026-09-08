@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?><!-- A card with no artwork. The image view's background rather than a Glide placeholder,
+     which would go through the poster's centerCrop matrix and stretch the glyph. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+  <item>
+    <shape android:shape="rectangle">
+      <solid android:color="@color/bg_placeholder" />
+    </shape>
+  </item>
+  <item
+    android:drawable="@drawable/ic_placeholder_person"
+    android:gravity="center" />
+</layer-list>

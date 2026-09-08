@@ -1,0 +1,18 @@
+<Project>
+
+  <!-- Release is signed with the key every published build must carry; without it a Release
+       build signs with the machine's debug key and no installed app can take the update. -->
+  <Import Project="$(MSBuildThisFileDirectory)keystore/signing.props"
+          Condition="Exists('$(MSBuildThisFileDirectory)keystore/signing.props')" />
+
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+</Project>

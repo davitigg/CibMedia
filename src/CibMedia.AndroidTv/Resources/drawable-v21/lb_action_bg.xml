@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?><!-- Replaces Leanback's action button background, a ripple that never fires for a D-pad, with
+     a state list keyed on state_focused. It has to sit in drawable-v21: Leanback declares its
+     version under that qualifier, and a plain drawable/ copy would lose to it. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+
+  <item android:state_focused="true">
+    <shape android:shape="rectangle">
+      <corners android:radius="@dimen/lb_action_button_corner_radius" />
+      <solid android:color="@color/accent_brand" />
+    </shape>
+  </item>
+
+  <item android:state_pressed="true">
+    <shape android:shape="rectangle">
+      <corners android:radius="@dimen/lb_action_button_corner_radius" />
+      <solid android:color="@color/accent_brand" />
+    </shape>
+  </item>
+
+  <item>
+    <shape android:shape="rectangle">
+      <corners android:radius="@dimen/lb_action_button_corner_radius" />
+      <solid android:color="@color/bg_placeholder" />
+    </shape>
+  </item>
+
+</selector>

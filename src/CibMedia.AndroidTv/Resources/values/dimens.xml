@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?><!-- Drawn for a 960dp-wide screen; ScaledContext corrects any panel that reports otherwise.
+     Type, spacing, focus and the browse chrome come from Leanback and are tuned in
+     dimens_leanback.xml. -->
+<resources>
+
+  <dimen name="search_bar_radius">11.5dp</dimen>
+
+  <!-- The PNGs are cut at exactly this size per density bucket. -->
+  <dimen name="brand_mark_size">72dp</dimen>
+  <dimen name="brand_mark_margin_bottom">31.5dp</dimen>
+
+  <!-- Artwork sizes: what the presenters hand Glide, so they decide the decoded bitmap size
+       as well as the layout. -->
+  <dimen name="card_width">112.5dp</dimen>
+  <dimen name="card_poster_height">169dp</dimen>
+  <dimen name="card_focused_height">200.5dp</dimen>
+
+  <dimen name="cast_card_width">79dp</dimen>
+  <dimen name="cast_photo_height">118dp</dimen>
+
+  <dimen name="season_card_width">112.5dp</dimen>
+  <dimen name="season_poster_height">157.5dp</dimen>
+
+  <dimen name="episode_card_width">180dp</dimen>
+  <dimen name="episode_still_height">101.5dp</dimen>
+
+  <!-- One size across every card, sized for the narrowest artwork (a cast photo). -->
+  <dimen name="card_placeholder_icon">36dp</dimen>
+
+  <dimen name="card_badge_margin">5.5dp</dimen>
+  <dimen name="card_badge_padding_horizontal">5.5dp</dimen>
+  <dimen name="card_badge_padding_vertical">2.5dp</dimen>
+  <dimen name="card_badge_text_size">9.5sp</dimen>
+  <dimen name="card_badge_corner_radius">4.5dp</dimen>
+
+  <dimen name="settings_card_width">169dp</dimen>
+  <dimen name="settings_card_height">101.5dp</dimen>
+  <dimen name="settings_card_corner_radius">9dp</dimen>
+
+  <!-- The handoff code on the setup screen, sized for a phone camera rather than a glyph. -->
+  <dimen name="setup_qr_size">304dp</dimen>
+
+  <!-- The details backdrop, fed to the parallax background controller. -->
+  <dimen name="hero_height">394dp</dimen>
+  <dimen name="hero_backdrop_width">960dp</dimen>
+
+  <!-- The title over the player's controls, read across the room. -->
+  <dimen name="playback_title_text_size">25sp</dimen>
+  <dimen name="playback_title_padding_horizontal">36dp</dimen>
+  <dimen name="playback_title_padding_top">27dp</dimen>
+
+</resources>

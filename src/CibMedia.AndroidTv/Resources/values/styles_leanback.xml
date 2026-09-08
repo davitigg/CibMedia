@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?><!-- Overrides of Leanback's own styles, resolved by name at merge time. Replacing a style
+     replaces all of it, so every attribute is repeated. -->
+<resources>
+
+  <!-- textAllCaps off: PLAY would be the only capitalised text on the screen. -->
+  <style name="TextAppearance.Leanback.DetailsActionButton">
+    <item name="android:textSize">@dimen/lb_action_text_size</item>
+    <item name="android:textColor">@color/lb_action_text_color</item>
+    <item name="android:textAllCaps">false</item>
+  </style>
+
+  <!-- The guided step's only use is the setup screen. Leanback sizes its icon slot at 140dp
+       for a glyph; this one holds the handoff QR, and the type comes down with it so the title
+       does not wrap three times in the column left beside the code. -->
+  <style name="Widget.Leanback.GuidanceContainerStyle">
+    <item name="android:layout_width">match_parent</item>
+    <item name="android:layout_height">match_parent</item>
+    <item name="android:paddingStart">45dp</item>
+    <item name="android:paddingEnd">27dp</item>
+    <item name="android:clipToPadding">false</item>
+  </style>
+
+  <!-- No vertical rule: GuidanceStylingRelativeLayout.onLayout offsets the icon from wherever
+       it was already laid out, so a centerVertical or alignTop here is added to Leanback's own
+       offset rather than replacing it. -->
+  <style name="Widget.Leanback.GuidanceIconStyle">
+    <item name="android:layout_width">@dimen/setup_qr_size</item>
+    <item name="android:layout_height">@dimen/setup_qr_size</item>
+    <item name="android:layout_alignParentStart">true</item>
+    <item name="android:layout_marginEnd">22.5dp</item>
+    <item name="android:scaleType">fitCenter</item>
+  </style>
+
+  <style name="Widget.Leanback.GuidanceBreadcrumbStyle">
+    <item name="android:importantForAccessibility">no</item>
+    <item name="android:layout_width">wrap_content</item>
+    <item name="android:layout_height">wrap_content</item>
+    <item name="android:layout_toEndOf">@id/guidance_icon</item>
+    <item name="android:ellipsize">end</item>
+    <item name="android:fontFamily">sans-serif-condensed</item>
+    <item name="android:singleLine">true</item>
+    <item name="android:textColor">@color/text_muted</item>
+    <item name="android:textSize">14.5sp</item>
+    <item name="android:gravity">start</item>
+    <item name="android:textAlignment">viewStart</item>
+  </style>
+
+  <style name="Widget.Leanback.GuidanceTitleStyle">
+    <item name="android:importantForAccessibility">no</item>
+    <item name="android:layout_below">@id/guidance_breadcrumb</item>
+    <item name="android:layout_toEndOf">@id/guidance_icon</item>
+    <item name="android:layout_width">wrap_content</item>
+    <item name="android:layout_height">wrap_content</item>
+    <item name="android:layout_centerVertical">true</item>
+    <item name="android:ellipsize">end</item>
+    <item name="android:fontFamily">sans-serif-light</item>
+    <item name="android:gravity">start</item>
+    <item name="android:maxLines">2</item>
+    <item name="android:textColor">@color/text_primary</item>
+    <item name="android:textSize">25sp</item>
+    <item name="android:textAlignment">viewStart</item>
+    <item name="android:paddingBottom">4.5dp</item>
+    <item name="android:paddingTop">2.5dp</item>
+  </style>
+
+  <style name="Widget.Leanback.GuidanceDescriptionStyle">
+    <item name="android:importantForAccessibility">no</item>
+    <item name="android:layout_below">@id/guidance_title</item>
+    <item name="android:layout_toEndOf">@id/guidance_icon</item>
+    <item name="android:layout_width">wrap_content</item>
+    <item name="android:layout_height">wrap_content</item>
+    <item name="android:layout_alignWithParentIfMissing">true</item>
+    <item name="android:ellipsize">end</item>
+    <item name="android:fontFamily">sans-serif</item>
+    <item name="android:gravity">start</item>
+    <item name="android:maxLines">6</item>
+    <item name="android:textColor">@color/text_muted</item>
+    <item name="android:textSize">14.5sp</item>
+    <item name="android:lineSpacingExtra">3.5dp</item>
+    <item name="android:textAlignment">viewStart</item>
+  </style>
+
+</resources>

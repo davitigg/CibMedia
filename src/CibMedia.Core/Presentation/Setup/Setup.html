@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CibMedia</title>
+  <style>
+    :root { color-scheme: dark }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      background: #12151c;
+      color: #e8eaed;
+      font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+
+    main { max-width: 30rem; margin: 0 auto }
+
+    h1 { font-size: 1.4rem; margin: .2em 0 .8em }
+
+    h2 { font-size: 1.05rem; margin: 1.6em 0 .2em }
+
+    p { margin: .4em 0 }
+
+    a { color: #8ab4f8 }
+
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      margin: .8em 0 .2em;
+      padding: 14px;
+      font-size: 17px;
+      letter-spacing: .04em;
+      border-radius: 10px;
+      border: 1px solid #39404f;
+      background: #1b1f28;
+      color: #e8eaed;
+    }
+
+    input:focus { outline: 2px solid #8ab4f8; border-color: transparent }
+
+    button {
+      width: 100%;
+      margin-top: 1.4em;
+      padding: 14px;
+      font-size: 17px;
+      font-weight: 600;
+      border: 0;
+      border-radius: 10px;
+      background: #8ab4f8;
+      color: #12151c;
+    }
+
+    button:disabled { opacity: .4 }
+
+    .ok { color: #81c995 }
+
+    .bad { color: #f28b82; min-height: 1.55em; margin: .2em 0 0 }
+
+    .hint { color: #9aa0a6; font-size: .9rem }
+
+    footer { margin-top: 2em; color: #9aa0a6; font-size: .85rem }
+
+    [hidden] { display: none }
+  </style>
+</head>
+<body>
+<main>
+  <section id="ask">
+    <h1>Set up your TV</h1>
+
+    <p class="hint">Your TMDb key comes from
+      <a href="https://www.themoviedb.org/settings/api" target="_blank"
+         rel="noreferrer">themoviedb.org/settings/api</a></p>
+
+    <form id="form">
+      <section>
+        <h2>TMDb API key</h2>
+        <input id="tmdb" name="tmdb" autocomplete="off" autocapitalize="off"
+               autocorrect="off" spellcheck="false" inputmode="latin"
+               placeholder="Paste your TMDb key">
+      </section>
+
+      <p class="bad" id="error"></p>
+      <button type="submit" id="send" disabled>Send to TV</button>
+    </form>
+  </section>
+
+  <section id="sent" hidden>
+    <h1>Sent</h1>
+    <p class="ok">Your TV has the key — it says on screen whether it took it.</p>
+    <button type="button" id="again">Send again</button>
+  </section>
+
+  <footer id="address"></footer>
+</main>
+
+<script>
+  // A keyboard and nothing more: the TV holds and shows the key's status, and only the issuing
+  // service gets an opinion about what a key looks like.
+  const inputs = {
+    tmdb: document.getElementById('tmdb')
+  };
+
+  const names = Object.keys(inputs);
+
+  const form = document.getElementById('form');
+  const send = document.getElementById('send');
+  const error = document.getElementById('error');
+
+  document.getElementById('address').textContent = location.host;
+
+  for (const name of names) inputs[name].addEventListener('input', allowSend);
+
+  inputs[names[0]].focus();
+
+  const typed = name => inputs[name].value.trim();
+
+  // A field left empty is a key this trip is not about; the TV leaves what it has alone.
+  function allowSend() {
+    send.disabled = !names.some(typed);
+  }
+
+  allowSend();
+
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    error.textContent = '';
+
+    send.disabled = true;
+
+    try {
+      const body = new URLSearchParams();
+      for (const name of names) if (typed(name)) body.set(name, typed(name));
+
+      const response = await fetch(location.pathname, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: body.toString()
+      });
+
+      if (!response.ok) throw new Error(response.status);
+
+      document.getElementById('ask').hidden = true;
+      document.getElementById('sent').hidden = false;
+    } catch {
+      // The TV releases the port when the setup screen leaves the front, which is the usual
+      // reason this fails.
+      error.textContent = 'No answer from the TV. Check the setup screen is still open on it, '
+        + 'and that you are both on the same Wi-Fi.';
+      send.disabled = false;
+    }
+  });
+
+  // The verdict lands on the TV, so a refused key needs a way back to the form from here.
+  document.getElementById('again').addEventListener('click', () => {
+    document.getElementById('sent').hidden = true;
+    document.getElementById('ask').hidden = false;
+    allowSend();
+  });
+</script>
+</body>
+</html>
