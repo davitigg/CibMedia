@@ -113,6 +113,11 @@ page to streams and references neither Android nor Core; `CibMedia.AndroidTv` is
   cannot infer. Never restate the signature, the type, or the line below it, and never narrate
   what the code used to be — git has that. No `///` docs, no commented-out code, no decision
   log or changelog in a comment. When in doubt, rename the thing instead.
+- **Strip the commentary before committing.** Re-read every comment in the diff and delete the
+  ones the change no longer needs: a note explaining what the line replaced, a justification the
+  predicate or the name already carries, scaffolding written to think the problem through. What
+  survives is the quirk, the measurement, the invariant. A comment that only made sense while the
+  change was being written is not committed.
 - **A name says what the thing does now.** Methods are verbs and async ones end in `Async`
   (`ReloadContinueWatchingAsync`, `EnsureConfigAsync`); a bool reads as a question (`HasFailed`);
   an override names its parameters after what they hold, never the binding's `p0`/`p1` (CA1725

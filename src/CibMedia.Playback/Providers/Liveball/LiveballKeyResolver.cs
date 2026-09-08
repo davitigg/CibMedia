@@ -1,3 +1,4 @@
+using CibMedia.Playback.Extensions;
 using CibMedia.Playback.Logging;
 using CibMedia.Playback;
 using Microsoft.Extensions.Caching.Memory;
@@ -56,7 +57,7 @@ internal sealed class LiveballKeyResolver(
 
             return LiveballPage.ReadPayloads(html).Select(LiveballToken.ReadPayload).OfType<byte[]>().ToList();
         }
-        catch (Exception exception) when (LiveballClient.IsUpstreamFault(exception, cancellationToken))
+        catch (Exception exception) when (exception.IsUpstreamFault(cancellationToken))
         {
             logger.LiveballKeyPageUnread(page, exception);
 

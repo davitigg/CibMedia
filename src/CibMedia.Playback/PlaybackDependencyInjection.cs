@@ -12,9 +12,10 @@ namespace CibMedia.Playback;
 
 public static class PlaybackDependencyInjection
 {
-    // Stacks are raced, so this is what one slow upstream costs the whole lookup rather than what
-    // each adds. At four seconds a liveball page over wifi timed out, which reads as nothing on air.
-    private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(15);
+    // Every stack is awaited, so this is what one slow upstream costs the whole lookup rather than
+    // what each adds. At four seconds a liveball page over wifi timed out, which reads as nothing
+    // on air.
+    private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(10);
 
     private static string Required(string value, string name)
     {

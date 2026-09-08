@@ -91,7 +91,7 @@ internal sealed class XpassPlaybackProvider(
             // stack's encode, which does not line up.
             return new XpassResolved(streams, streams.Count is 0 ? [] : tracks);
         }
-        catch (HttpRequestException exception)
+        catch (Exception exception) when (exception.IsUpstreamFault(cancellationToken))
         {
             cache.Set(OutageKey, true, ITmdbPlaybackProvider.OutageTtl);
 

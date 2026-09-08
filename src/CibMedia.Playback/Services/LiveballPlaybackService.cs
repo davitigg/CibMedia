@@ -1,3 +1,4 @@
+using CibMedia.Playback.Extensions;
 using CibMedia.Playback.Logging;
 using System.Diagnostics;
 using CibMedia.Playback.Models;
@@ -161,7 +162,7 @@ public sealed class LiveballPlaybackService
 
             return new FeedOutcome(new HlsStream(url, feed.Channel), null);
         }
-        catch (Exception exception) when (LiveballClient.IsUpstreamFault(exception, cancellationToken))
+        catch (Exception exception) when (exception.IsUpstreamFault(cancellationToken))
         {
             _logger.LiveballChannelFailed(feed.Channel, page, exception);
 

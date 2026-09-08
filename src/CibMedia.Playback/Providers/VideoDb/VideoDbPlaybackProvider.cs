@@ -79,7 +79,7 @@ internal sealed partial class VideoDbPlaybackProvider(
         {
             return await client.GetPlaylistAsync(type, tmdbId, cancellationToken);
         }
-        catch (HttpRequestException exception)
+        catch (Exception exception) when (exception.IsUpstreamFault(cancellationToken))
         {
             cache.Set(OutageKey, true, ITmdbPlaybackProvider.OutageTtl);
 

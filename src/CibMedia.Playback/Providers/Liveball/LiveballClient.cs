@@ -1,3 +1,4 @@
+using CibMedia.Playback.Extensions;
 using CibMedia.Playback.Logging;
 using System.Text;
 using System.Text.Json;
@@ -15,13 +16,6 @@ internal sealed class LiveballClient(HttpClient http, ILogger<LiveballClient> lo
     private const int SnippetLength = 300;
 
     private static readonly string[] CloudflareHeaders = ["cf-mitigated", "cf-ray", "server"];
-
-    // The client's own timeout surfaces as a cancellation the caller never asked for.
-    public static bool IsUpstreamFault(Exception exception, CancellationToken cancellationToken)
-    {
-        return exception is HttpRequestException
-               || (exception is OperationCanceledException && !cancellationToken.IsCancellationRequested);
-    }
 
     // Throws on a non-success status rather than returning null: an absent broadcast is cached as
     // a miss, and a Cloudflare challenge arriving as a 403 must not be held that way.
@@ -120,7 +114,7 @@ internal sealed class LiveballClient(HttpClient http, ILogger<LiveballClient> lo
 
             return body.StartsWith(PlaylistHeader, StringComparison.Ordinal);
         }
-        catch (Exception exception) when (IsUpstreamFault(exception, cancellationToken))
+        catch (Exception exception) when (exception.IsUpstreamFault(cancellationToken))
         {
             // An edge that cannot be reached is off air as far as a player is concerned.
             logger.LiveballProbeFailed(new Uri(url).GetLeftPart(UriPartial.Path), exception);
