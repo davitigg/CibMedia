@@ -43,7 +43,9 @@ internal sealed partial class XpassBuildIdResolver(
         }
 
         var loaderSource = await http.GetStringAsync(Absolute(loader.Groups[1].Value), cancellationToken);
-        var playerPath = XpassObfuscatedBundle.DecodeStrings(loaderSource).FirstOrDefault(IsPlayerScript);
+        var playerPath = XpassObfuscatedBundle.DecodeStrings(loaderSource)
+            .Concat(XpassObfuscatedBundle.ReadLiterals(loaderSource))
+            .FirstOrDefault(IsPlayerScript);
         if (playerPath is null)
         {
             logger.XpassBuildIdUnreadable("mainmini.js string table has no player script path");

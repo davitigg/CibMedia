@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace CibMedia.Playback.Providers.Xpass;
 
-// Reads the string table out of an obfuscator.io bundle. Every literal the bundle uses sits in one
+// Reads the string table out of an obfuscator.io bundle. The literals present when it ran sit in one
 // array, custom-alphabet base64 encoded, and each entry decodes on its own: the rotation the bundle
 // applies at load only changes which call-site index maps to which entry, so scanning the whole
 // decoded table finds any literal without executing the script.
@@ -25,6 +25,14 @@ internal static partial class XpassObfuscatedBundle
             var decoded = TryDecode(Unescape(literal.Groups[1].Value));
             if (decoded is not null) yield return decoded;
         }
+    }
+
+    // The obfuscator only tabulates the literals present when it ran; anything written into the
+    // bundle afterwards stays inline.
+    public static IEnumerable<string> ReadLiterals(string bundle)
+    {
+        foreach (Match literal in StringLiteralRegex().Matches(bundle))
+            yield return Unescape(literal.Groups[1].Value);
     }
 
     private static string? TryDecode(string encoded)
