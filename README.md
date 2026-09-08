@@ -124,3 +124,7 @@ dotnet run --project tools/CibMedia.Playback.Cli -- providers
 
 A `playback.json` in the working directory overrides the one the harness shipped with. Liveball
 refuses Windows whatever the address it comes from, so a liveball page is exercised on a device.
+
+## Disclaimer
+
+everything but this line is vibe coded shit by Claude
