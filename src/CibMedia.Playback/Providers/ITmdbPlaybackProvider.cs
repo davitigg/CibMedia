@@ -1,3 +1,4 @@
+using System.Net;
 using CibMedia.Playback.Models;
 
 namespace CibMedia.Playback.Providers;
@@ -16,15 +17,26 @@ internal interface ITmdbPlaybackProvider
     static readonly TimeSpan AbsentTtl = TimeSpan.FromMinutes(10);
 
     // What a negative answer is worth: a dead upstream costs one slow request per window rather
-    // than one per lookup. A timeout is one slow request and a refusal is the origin asking to be
-    // left alone, so they are not worth the same window.
-    static readonly TimeSpan TimedOutTtl = TimeSpan.FromSeconds(45);
+    // than one per lookup. Both are short because a window re-arms — when it lapses one request
+    // goes out, and a stack still down opens it again — so length buys nothing but fewer probes,
+    // while a window opened in error skips every title for the whole of it.
+    static readonly TimeSpan TimedOutTtl = TimeSpan.FromSeconds(20);
 
-    static readonly TimeSpan RefusedTtl = TimeSpan.FromMinutes(5);
+    // A minute is the span a rate limiter is usually counting over, and one probe a minute is not
+    // the burst it is counting.
+    static readonly TimeSpan RefusedTtl = TimeSpan.FromMinutes(1);
 
+    // Only an origin turning this box away earns the long window: that is the one fault retrying
+    // makes worse. Everything else — a 502, a request that ran out of time — is the upstream having
+    // a moment, which the short window is long enough for.
     static TimeSpan OutageFor(Exception fault)
     {
-        return fault is HttpRequestException ? RefusedTtl : TimedOutTtl;
+        return fault is HttpRequestException
+        {
+            StatusCode: HttpStatusCode.TooManyRequests or HttpStatusCode.Forbidden
+        }
+            ? RefusedTtl
+            : TimedOutTtl;
     }
 
     PlaybackProvider Provider { get; }
