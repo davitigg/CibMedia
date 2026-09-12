@@ -341,7 +341,7 @@ public sealed class PlaybackActivity : Activity
         var dataSource = new DefaultHttpDataSource.Factory().SetDefaultRequestProperties(headers);
 
         _player = new ExoPlayerBuilder(this)
-            .SetMediaSourceFactory(new DefaultMediaSourceFactory(dataSource))!
+            .SetMediaSourceFactory(new DefaultMediaSourceFactory(new PngWrappedDataSourceFactory(dataSource!)))!
             .Build();
 
         _player!.AddListener(new PlayerEventListener(OnPlaybackEnded, OnPlaybackFailed));

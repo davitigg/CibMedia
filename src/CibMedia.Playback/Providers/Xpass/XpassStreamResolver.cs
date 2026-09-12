@@ -7,38 +7,70 @@ using CibMedia.Playback.Providers.Xpass.Models;
 
 namespace CibMedia.Playback.Providers.Xpass;
 
-// Turns the server list into streams a plain HLS client can play. Most xpass servers hide MPEG-TS
-// inside PNG bodies on TikTok CDNs and rely on the embed's service worker to strip the prefix;
-// those cannot play outside the embed, so a candidate's first segment is read before the server is
-// offered.
+// Turns the server list into streams the head can play. Many xpass servers append the MPEG-TS to a
+// complete 1x1 PNG and rely on the embed's service worker to strip it; the head's
+// PngWrappedDataSource does the same, so a wrapped segment counts as carried. What is read is the
+// candidate's first segment either way — a server offering neither shape is not offered.
 internal sealed class XpassStreamResolver(HttpClient http, XpassOptions options, ILogger<XpassStreamResolver> logger)
 {
     private const byte TransportStreamSync = 0x47;
     private const int TransportStreamPacket = 188;
 
-    // Two consecutive sync bytes rule out a text body that happens to start with 'G'.
-    private const int TransportStreamProbeLength = TransportStreamPacket * 2 + 1;
+    // Two consecutive sync bytes rule out a text body that happens to start with 'G'. The wrapper
+    // is read on top of them: the longest measured runs to 941 bytes, and the allowance is well
+    // clear of it — a wrapper this does not reach the end of costs the server its place.
+    private const int PrefixAllowance = 4096;
+    private const int TransportStreamProbeLength = PrefixAllowance + TransportStreamPacket * 2 + 1;
 
     // Every candidate costs a playlist lookup against the player origin, which answers a burst of
     // roughly twenty requests with a 429. Everything that verifies is offered; nothing unverified
     // is appended behind it.
-    private const int MaxCandidates = 5;
+    private const int MaxCandidates = 12;
 
-    // Verifying a server is four sequential hops: playlist, master, variant, segment. Candidates
-    // run as one concurrent wave, so the wave deadline is the ceiling a cold miss can add to the
-    // response. The hop timeout is what stops a host that never answers from holding the wave at
-    // that ceiling on its own, and it is measured on the box rather than on a desktop: a LUL
-    // master on a cold Cloudflare worker clears two seconds from a desktop but not from the box,
-    // where at that budget every LUL server failed a hop and xpass offered the fastest server
-    // alone. At four the same title offers four.
+    // A prefix names a CDN family, never an encode: one measured episode had LUL 1-4 and LUL 8 at
+    // 404 while LUL 5-7 played. So candidates go in waves rather than in one take, and a family is
+    // capped inside a wave — otherwise the eight LUL entries spend the whole of it on one guess.
+    private const int WaveSize = 4;
+    private const int PerFamilyPerWave = 2;
+
+    // What the Streams picker is offered: two fallbacks behind the one that plays, which is as far
+    // as a sitting ever gets. Stopping here is what keeps a title off the later waves.
+    private const int EnoughStreams = 3;
+
+    // Verifying a server is four sequential hops: playlist, master, variant, segment. A wave runs
+    // its candidates concurrently, so the wave deadline is the ceiling one adds to the response.
+    // The hop timeout is what stops a host that never answers from holding the wave at that
+    // ceiling on its own, and it is measured on the box rather than on a desktop: a LUL master on
+    // a cold Cloudflare worker clears two seconds from a desktop but not from the box, where at
+    // that budget every LUL server failed a hop and xpass offered the fastest server alone. At
+    // four the same title offers four.
     private static readonly TimeSpan HopTimeout = TimeSpan.FromSeconds(4);
     private static readonly TimeSpan WaveDeadline = TimeSpan.FromSeconds(6);
 
-    // Ordering only; correctness comes from the byte check. Names seen serving clean HLS go first,
-    // names seen serving PNG-wrapped HLS last. The MP4-only classes (BOX, BIG, MIX, ZUR) are left
-    // out on purpose: nothing is built from them, so promoting one wastes a probe slot.
-    private static readonly string[] CleanPrefixes = ["VIP", "LUL", "WIS"];
-    private static readonly string[] WrappedPrefixes = ["TIK", "FIL", "AKC", "MEG"];
+    // Only a title the earlier waves left short reaches a later one, and this is what stops that
+    // title from costing every wave's deadline in turn. Two full waves and most of a third: the
+    // box resolves a cold title in around three times what a desktop does — 11s measured against
+    // 3.5s — so at twelve a third wave could not start, and the titles that need one are the
+    // titles that otherwise carry nothing.
+    private static readonly TimeSpan ProbeDeadline = TimeSpan.FromSeconds(15);
+
+    // Ordering only; correctness comes from the byte check. Set from ten titles rather than
+    // guessed — VIP carried 9 of 10, TIK 7 of 9, LUL 26 of 42, WIS 10 of 21, against FIL at 4 of 26
+    // and MOL at 2 of 14. TIK is PNG-wrapped, which is worth a tier now that the head strips one.
+    //
+    // The embed's own order was measured against this and cost 6.6 probes a title to this table's
+    // 4.6: it lists the same families in the same places whatever the title, so being first says
+    // nothing about holding this one. Finer tiers than these two were measured and gained nothing.
+    private static readonly string[] CleanPrefixes = ["VIP", "TIK", "LUL", "WIS"];
+
+    // Nothing in 31 probes over nine titles, and every one of them spent a whole hop timing out
+    // rather than failing fast. Behind the names never seen at all: the cost of trying one is the
+    // worst there is, and MaxCandidates means a title with any depth never reaches them.
+    private static readonly string[] SlowPrefixes = ["ARA", "SAF"];
+
+    // What a server answers with for a title it does not hold. Free to spot, and spotting it saves
+    // the three hops that would chase it.
+    private const string MissingFile = "/video/error";
 
     private readonly Uri origin = new($"https://{options.PlayerHost}/");
 
@@ -50,27 +82,93 @@ internal sealed class XpassStreamResolver(HttpClient http, XpassOptions options,
         // OrderBy is stable, so ties keep the embed's own order.
         var candidates = servers
             .Where(server => !string.IsNullOrWhiteSpace(server.Url))
-            .OrderBy(Rank)
+            .Select((server, index) => new Candidate(server, LabelFor(server, index)))
+            .OrderBy(candidate => Rank(candidate.Server))
             .Take(MaxCandidates)
-            .Select((server, index) => (Server: server, Label: LabelFor(server, index)));
+            .ToList();
 
-        using var wave = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        wave.CancelAfter(WaveDeadline);
+        using var probe = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        probe.CancelAfter(ProbeDeadline);
+
+        var streams = new List<PlaybackStream>();
+
+        foreach (var wave in Waves(candidates))
+        {
+            if (probe.IsCancellationRequested) break;
+
+            streams.AddRange(await RunWaveAsync(wave, probe.Token));
+
+            if (streams.Count >= EnoughStreams) break;
+        }
+
+        // A wave answers as a whole, so the one that reaches the count can carry past it.
+        return streams.Count > EnoughStreams ? streams[..EnoughStreams] : streams;
+    }
+
+    private async Task<IReadOnlyList<PlaybackStream>> RunWaveAsync(
+        IReadOnlyList<Candidate> wave,
+        CancellationToken cancellationToken
+    )
+    {
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        deadline.CancelAfter(WaveDeadline);
 
         var verified = await Task.WhenAll(
-            candidates.Select(candidate => VerifyAsync(candidate.Server, candidate.Label, wave.Token)));
+            wave.Select(candidate => VerifyAsync(candidate.Server, candidate.Label, deadline.Token)));
 
         return verified.OfType<PlaybackStream>().ToList();
     }
 
+    // Walks the ranked order filling one wave at a time, passing over a candidate whose family is
+    // already at its cap for that wave — so it keeps its place and lands in the next one.
+    private static IEnumerable<List<Candidate>> Waves(IReadOnlyList<Candidate> candidates)
+    {
+        var pending = new LinkedList<Candidate>(candidates);
+
+        while (pending.Count > 0)
+        {
+            var wave = new List<Candidate>(WaveSize);
+            var taken = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+            for (var node = pending.First; node is not null && wave.Count < WaveSize;)
+            {
+                var next = node.Next;
+                var family = Family(node.Value.Server.Name);
+
+                if (taken.GetValueOrDefault(family) < PerFamilyPerWave)
+                {
+                    taken[family] = taken.GetValueOrDefault(family) + 1;
+                    wave.Add(node.Value);
+                    pending.Remove(node);
+                }
+
+                node = next;
+            }
+
+            yield return wave;
+        }
+    }
+
+    // "LUL 3" and "LUL 7" are one family; the number is the entry inside it.
+    private static string Family(string? name)
+    {
+        var trimmed = (name ?? "").Trim();
+        var space = trimmed.IndexOf(' ');
+
+        return space < 0 ? trimmed : trimmed[..space];
+    }
+
     private static int Rank(XpassServer server)
     {
-        var name = server.Name ?? "";
-
-        if (CleanPrefixes.Any(prefix => name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))) return 0;
-        if (WrappedPrefixes.Any(prefix => name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))) return 2;
+        if (HasPrefix(server.Name, CleanPrefixes)) return 0;
+        if (HasPrefix(server.Name, SlowPrefixes)) return 2;
 
         return 1;
+    }
+
+    private static bool HasPrefix(string? name, string[] prefixes)
+    {
+        return prefixes.Any(prefix => (name ?? "").StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
     }
 
     // The embed's own server menu shows these names, so the player shows the same ones.
@@ -130,7 +228,12 @@ internal sealed class XpassStreamResolver(HttpClient http, XpassOptions options,
 
         var source = first?.Sources?.FirstOrDefault(entry => !string.IsNullOrWhiteSpace(entry.File));
 
-        return source is null || IsProgressive(source) ? null : source.File;
+        return source is null || IsMissing(source) || IsProgressive(source) ? null : source.File;
+    }
+
+    private static bool IsMissing(XpassSource source)
+    {
+        return source.File!.EndsWith(MissingFile, StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsProgressive(XpassSource source)
@@ -161,9 +264,27 @@ internal sealed class XpassStreamResolver(HttpClient http, XpassOptions options,
 
         var head = await ReadPrefixAsync(new Uri(mediaUri, segment), TransportStreamProbeLength, cancellationToken);
 
-        return head.Length > TransportStreamPacket
-               && head[0] == TransportStreamSync
-               && head[TransportStreamPacket] == TransportStreamSync;
+        return CarriesTransportStream(head);
+    }
+
+    private static bool CarriesTransportStream(ReadOnlySpan<byte> head)
+    {
+        var payload = head;
+
+        if (PngWrappedSegment.Opens(head))
+        {
+            var start = PngWrappedSegment.PayloadStart(head);
+
+            // A body that opened like a PNG and closed on nothing is not a shape the head can
+            // strip either.
+            if (start < 0) return false;
+
+            payload = head[start..];
+        }
+
+        return payload.Length > TransportStreamPacket
+               && payload[0] == TransportStreamSync
+               && payload[TransportStreamPacket] == TransportStreamSync;
     }
 
     private static string? FirstUri(string playlist)
@@ -211,6 +332,8 @@ internal sealed class XpassStreamResolver(HttpClient http, XpassOptions options,
 
         return hop;
     }
+
+    private sealed record Candidate(XpassServer Server, string Label);
 
     private HttpRequestMessage NewRequest(Uri uri)
     {

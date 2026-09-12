@@ -26,6 +26,7 @@ liveball page is exercised on a device.
 |------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
 | A record, view model, port implementation — anything with no Android reference | `src/CibMedia.Core`                                                                            |
 | A provider stack, its clients and parsers, or what a resolved answer costs to keep | `src/CibMedia.Playback`                                                    |
+| `PngWrappedSegment`, `PngWrappedDataSource`, or the resolver's byte check — neither half stands without the other | `src/CibMedia.Playback/Models/PngWrappedSegment.cs`, `src/CibMedia.AndroidTv/Playback/PngWrappedDataSource.cs` |
 | Which stacks a build resolves through, and the hosts they read | `src/CibMedia.Playback/playback.json`                                                            |
 | What a published release says about itself, or anything under `Updates/` | `manifest.json`, `src/CibMedia.Core/Updates`, `src/CibMedia.Core/Infrastructure/Updates`        |
 | Downloading, verifying or installing an apk, or the prompt that offers one | `src/CibMedia.AndroidTv/Platform/Apk*.cs`, `src/CibMedia.AndroidTv/App/AppUpdateCheck.cs`        |
