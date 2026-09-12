@@ -103,6 +103,14 @@ internal static partial class PlaybackLog
         Message = "xpass server {Server} did not finish before the wave deadline")]
     public static partial void XpassServerUnfinished(this ILogger logger, string? server);
 
+    // Warning rather than debug: no breaker covers the subtitle host, so this is the only place a
+    // stack playing without its tracks says so. It costs one line per resolved title, not per call.
+    [LoggerMessage(
+        EventId = 2009,
+        Level = LogLevel.Warning,
+        Message = "xpass subtitles are unavailable; its streams are offered without tracks")]
+    public static partial void XpassSubtitlesUnavailable(this ILogger logger, Exception exception);
+
     // Debug: liveball mints tokens for dark channels too, so an edge that cannot be reached is the
     // ordinary shape of a channel being off air.
     [LoggerMessage(

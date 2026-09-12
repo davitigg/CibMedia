@@ -78,11 +78,12 @@ internal sealed class XpassPlaybackProvider(
         // catalogue" rather than "throttled".
         if (cache.TryGetValue(OutageKey, out _)) throw new PlaybackOutageException(Provider);
 
+        // Subtitles do not depend on which server wins, so they ride alongside the probe. Started
+        // outside the try because it answers for itself: a fault here is never the video's.
+        var subtitlesTask = ReadSubtitlesAsync(path, cancellationToken);
+
         try
         {
-            // Subtitles do not depend on which server wins, so they ride alongside the probe.
-            var subtitlesTask = subtitles.GetAsync(path, cancellationToken);
-
             var servers = await client.GetServersAsync(path, cancellationToken);
             var streams = servers.Count is 0 ? [] : await resolver.ProbeAsync(servers, cancellationToken);
             var tracks = await subtitlesTask;
@@ -100,6 +101,26 @@ internal sealed class XpassPlaybackProvider(
             logger.ProviderOutageOpened(Provider, window, exception);
 
             throw;
+        }
+    }
+
+    // The subtitle host is a different origin from the player and carries an extra rather than the
+    // source, so its outage must not open the window that skips this stack's video. Seen down on
+    // its own for hours while the player answered throughout.
+    private async Task<IReadOnlyList<PlaybackSubtitle>> ReadSubtitlesAsync(
+        string path,
+        CancellationToken cancellationToken
+    )
+    {
+        try
+        {
+            return await subtitles.GetAsync(path, cancellationToken);
+        }
+        catch (Exception exception) when (exception.IsUpstreamFault(cancellationToken))
+        {
+            logger.XpassSubtitlesUnavailable(exception);
+
+            return [];
         }
     }
 }
