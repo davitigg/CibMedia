@@ -18,12 +18,19 @@ internal sealed partial class XpassClient(
     private const int NonceLength = 12;
     private const int TagLength = 16;
 
+    // The embed page and its payload are the only hops the resolver's budget does not cover, so
+    // without this they run to the client's own timeout. Measured on the box: at ten seconds a
+    // page that was merely slow read as an outage and shut the stack out for forty-five.
+    private static readonly TimeSpan FetchTimeout = TimeSpan.FromSeconds(6);
+
     // The servers the embed offers for a title, in the embed's own order, or empty when the title
     // is not in the catalogue.
     public async Task<IReadOnlyList<XpassServer>> GetServersAsync(string path, CancellationToken cancellationToken)
     {
         var pageUrl = $"https://{options.PlayerHost}/e/{path}?autostart=false";
-        var page = await http.GetStringAsync(pageUrl, cancellationToken);
+
+        using var fetch = StartFetch(cancellationToken);
+        var page = await http.GetStringAsync(pageUrl, fetch.Token);
 
         var dataUrl = DataUrlRegex().Match(page).Groups[1].Value;
         if (dataUrl.Length is 0) return [];
@@ -62,12 +69,21 @@ internal sealed partial class XpassClient(
 
     private async Task<string> GetCiphertextAsync(string dataUrl, string pageUrl, CancellationToken cancellationToken)
     {
+        using var fetch = StartFetch(cancellationToken);
         using var request = new HttpRequestMessage(HttpMethod.Get, $"https://{options.PlayerHost}{dataUrl}");
         request.Headers.Referrer = new Uri(pageUrl);
-        using var response = await http.SendAsync(request, cancellationToken);
+        using var response = await http.SendAsync(request, fetch.Token);
         response.EnsureSuccessStatusCode();
 
-        return (await response.Content.ReadAsStringAsync(cancellationToken)).Trim();
+        return (await response.Content.ReadAsStringAsync(fetch.Token)).Trim();
+    }
+
+    private static CancellationTokenSource StartFetch(CancellationToken cancellationToken)
+    {
+        var fetch = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        fetch.CancelAfter(FetchTimeout);
+
+        return fetch;
     }
 
     // Mirrors the player: the key is SHA-256 over a build-scoped string of the request's own path
