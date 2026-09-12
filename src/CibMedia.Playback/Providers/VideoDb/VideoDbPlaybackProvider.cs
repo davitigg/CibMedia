@@ -18,9 +18,6 @@ internal sealed partial class VideoDbPlaybackProvider(
     // The client only throws once every mirror is down, so the outage is global, not per-title.
     private const string OutageKey = "playback:videodb:unavailable";
 
-    // An absence is held only until the next recheck, never for as long as a resolved lookup.
-    private static readonly TimeSpan Absent = ITmdbPlaybackProvider.AbsentTtl;
-
     public PlaybackProvider Provider => PlaybackProvider.VideoDb;
 
     public bool Enabled => options.Enabled;
@@ -60,7 +57,7 @@ internal sealed partial class VideoDbPlaybackProvider(
         return await cache.GetOrStoreAsync(
             $"playback:videodb:{type}:{tmdbId}",
             async token => await FetchAsync(type, tmdbId, token),
-            playlist => playlist is null ? Absent : ITmdbPlaybackProvider.SourceTtl,
+            ITmdbPlaybackProvider.AnswerTtl,
             cancellationToken);
     }
 

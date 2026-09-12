@@ -6,7 +6,7 @@ namespace CibMedia.Core.Tests.Playback;
 
 public sealed class MemoryCacheExtensionsTests
 {
-    private static readonly Func<int, TimeSpan> AMinute = _ => TimeSpan.FromMinutes(1);
+    private static readonly TimeSpan AMinute = TimeSpan.FromMinutes(1);
 
     // Details and playback resolve the same title separately and overlap, which used to run every
     // upstream request twice.

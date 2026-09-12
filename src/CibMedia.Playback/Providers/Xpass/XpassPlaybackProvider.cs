@@ -22,10 +22,6 @@ internal sealed class XpassPlaybackProvider(
     // itself. Global rather than per-title: the limit is per client, not per path.
     private const string OutageKey = "playback:xpass:unavailable";
 
-    // A throttled wave throws, so empty means an absence or a redeployed player answering in a
-    // shape this cannot read. The second would hide a title for the sitting at the source TTL.
-    private static readonly TimeSpan Empty = ITmdbPlaybackProvider.AbsentTtl;
-
     public PlaybackProvider Provider => PlaybackProvider.Xpass;
 
     public bool Enabled => options.Enabled;
@@ -51,7 +47,7 @@ internal sealed class XpassPlaybackProvider(
         var resolved = await cache.GetOrStoreAsync(
             $"playback:xpass:{path}",
             async token => await ResolveAsync(path, token),
-            outcome => outcome.Streams.Count is 0 ? Empty : ITmdbPlaybackProvider.SourceTtl,
+            ITmdbPlaybackProvider.AnswerTtl,
             cancellationToken);
 
         if (resolved.Streams.Count is 0) return null;

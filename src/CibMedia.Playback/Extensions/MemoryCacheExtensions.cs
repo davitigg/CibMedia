@@ -5,8 +5,6 @@ namespace CibMedia.Playback.Extensions;
 
 internal static class MemoryCacheExtensions
 {
-    // For entries whose lifetime the value decides: what came back picks how long it is held.
-    //
     // One lookup runs at a time per key. Opening a title's details and pressing play resolve it
     // separately and overlap, and measured on the box the second doubled every request the first
     // was already making — enough contention to push it past the client's own timeout and open an
@@ -15,7 +13,7 @@ internal static class MemoryCacheExtensions
         this IMemoryCache cache,
         string key,
         Func<CancellationToken, ValueTask<T>> factory,
-        Func<T, TimeSpan> lifetime,
+        TimeSpan lifetime,
         CancellationToken cancellationToken
     )
     {
@@ -36,14 +34,14 @@ internal static class MemoryCacheExtensions
         IMemoryCache cache,
         string key,
         Func<CancellationToken, ValueTask<T>> factory,
-        Func<T, TimeSpan> lifetime
+        TimeSpan lifetime
     )
     {
         try
         {
             var value = await factory(CancellationToken.None);
 
-            cache.Set(key, value, lifetime(value));
+            cache.Set(key, value, lifetime);
 
             return value;
         }

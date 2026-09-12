@@ -7,14 +7,11 @@ namespace CibMedia.Playback.Providers;
 // own catalogue, and a title it does not carry is null rather than an error.
 internal interface ITmdbPlaybackProvider
 {
-    // How long a resolved lookup stays good. Shared rather than per-provider: a response is an
-    // aggregate and cannot outlive its shortest-lived contributor. The cache is in process and
-    // goes with the app, so this is the length of a sitting rather than of a day.
-    static readonly TimeSpan SourceTtl = TimeSpan.FromMinutes(15);
-
-    // A title the stack does not carry, which is what stops a rail probing the same absences over
-    // and over. Absence is stable in a way an outage is not, so the two do not share a window.
-    static readonly TimeSpan AbsentTtl = TimeSpan.FromMinutes(10);
+    // How long a lookup stays good, carried or not. Shared rather than per-provider: a response is
+    // an aggregate and cannot outlive its shortest-lived contributor. Ten minutes covers stepping in
+    // and out of a title's details and then playing it, which is the whole job, and asks nothing of
+    // how long an upstream keeps a signed url alive. The cache goes with the app either way.
+    static readonly TimeSpan AnswerTtl = TimeSpan.FromMinutes(10);
 
     // What a negative answer is worth: a dead upstream costs one slow request per window rather
     // than one per lookup. Both are short because a window re-arms — when it lapses one request
