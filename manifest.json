@@ -1,36 +1,36 @@
-{
-  "versionCode": 4,
-  "versionName": "2.2",
-  "apkUrl": "https://github.com/davitigg/CibMedia/releases/download/v2.2/cibmedia-2.2.apk",
-  "sha256": "53870dc0511e7945c3b2fad6ff4652e2804481dfeaf6495f35adff04d851e88b",
-  "sizeBytes": 27014859,
-  "notes": "Playback fixes.",
-  "playback": {
-    "videoDb": {
-      "enabled": true,
-      "hosts": [
-        "videodb.stream",
-        "em.kinoflix.co",
-        "em.filmix.stream"
-      ]
-    },
-    "xpass": {
-      "enabled": true,
-      "playerHost": "play.xpass.top",
-      "subtitleHost": "sub.1x2.space"
-    },
-    "liveball": {
-      "enabled": true,
-      "pageHosts": [
-        "liveball.sx"
-      ],
-      "keyPages": [
-        "https://liveball.sx/news/ufc",
-        "https://liveball.sx/news/tennis",
-        "https://liveball.sx/news/formula-1",
-        "https://liveball.sx/news/tennis-usopen",
-        "https://liveball.sx/news/tennis-usopen2"
-      ]
-    }
-  }
+﻿{
+    "versionCode":  5,
+    "versionName":  "2.3",
+    "apkUrl":  "https://github.com/davitigg/CibMedia/releases/download/v2.3/cibmedia-2.3.apk",
+    "sha256":  "a668c5ba721731c785be5bc6de3ba659295814672f25fccfbca56a17c0fee27d",
+    "sizeBytes":  27051723,
+    "notes":  "More titles play, and one slow moment no longer hides the rest.",
+    "playback":  {
+                     "videoDb":  {
+                                     "enabled":  true,
+                                     "hosts":  [
+                                                   "videodb.stream",
+                                                   "em.kinoflix.co",
+                                                   "em.filmix.stream"
+                                               ]
+                                 },
+                     "xpass":  {
+                                   "enabled":  true,
+                                   "playerHost":  "play.xpass.top",
+                                   "subtitleHost":  "sub.1x2.space"
+                               },
+                     "liveball":  {
+                                      "enabled":  true,
+                                      "pageHosts":  [
+                                                        "liveball.sx"
+                                                    ],
+                                      "keyPages":  [
+                                                       "https://liveball.sx/news/ufc",
+                                                       "https://liveball.sx/news/tennis",
+                                                       "https://liveball.sx/news/formula-1",
+                                                       "https://liveball.sx/news/tennis-usopen",
+                                                       "https://liveball.sx/news/tennis-usopen2"
+                                                   ]
+                                  }
+                 }
 }
