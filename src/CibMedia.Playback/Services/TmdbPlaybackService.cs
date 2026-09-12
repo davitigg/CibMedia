@@ -47,7 +47,7 @@ public sealed class TmdbPlaybackService
     {
         var started = Stopwatch.GetTimestamp();
 
-        var (sources, degraded) = await GatherAsync(lookup, resolve);
+        var sources = await GatherAsync(lookup, resolve);
 
         var elapsed = (long)Stopwatch.GetElapsedTime(started).TotalMilliseconds;
 
@@ -60,7 +60,7 @@ public sealed class TmdbPlaybackService
 
         _logger.PlaybackResolved(lookup, sources.Count, _enabled.Count, Tally(sources), elapsed);
 
-        return new ResolvedPlayback(mediaType, sources, degraded);
+        return new ResolvedPlayback(mediaType, sources);
     }
 
     // What each stack carried, not just that it answered: a stack down to one stream where it
@@ -70,9 +70,9 @@ public sealed class TmdbPlaybackService
         return string.Join(", ", sources.Select(source => $"{source.Provider} {source.Streams.Count}"));
     }
 
-    // One stack being down degrades the response instead of failing it, and saying so is what
-    // keeps that thinner answer from being cached as long as a whole one.
-    private async Task<(List<PlaybackSource> Sources, bool Degraded)> GatherAsync(
+    // One stack being down thins the response rather than failing it, which is why the tally above
+    // is logged: it is the only record that an answer came back short.
+    private async Task<List<PlaybackSource>> GatherAsync(
         string lookup,
         Func<ITmdbPlaybackProvider, Task<PlaybackSource?>> resolve
     )
@@ -85,7 +85,7 @@ public sealed class TmdbPlaybackService
         if (failures.Count > 0 && failures.Count == outcomes.Length)
             throw new AggregateException($"Every playback provider failed for {lookup}.", failures);
 
-        return (outcomes.Select(outcome => outcome.Source).OfType<PlaybackSource>().ToList(), failures.Count > 0);
+        return outcomes.Select(outcome => outcome.Source).OfType<PlaybackSource>().ToList();
     }
 
     private async Task<Outcome> RunAsync(
