@@ -78,16 +78,31 @@ finally { $sha.Dispose() }
 
 $sha256 = [BitConverter]::ToString($digest).Replace('-', '').ToLowerInvariant()
 
-# playback stays whatever is committed: a release carries the config already on main, and never
-# reverts it to whatever this working tree happens to hold.
-$manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
-$manifest.versionCode = $versionCode
-$manifest.versionName = $VersionName
-$manifest.apkUrl = "https://github.com/$repository/releases/download/$tag/$(Split-Path $apk -Leaf)"
-$manifest.sha256 = $sha256
-$manifest.sizeBytes = (Get-Item $apk).Length
-$manifest.notes = $Notes
-$manifest | ConvertTo-Json -Depth 10 | Set-Content $manifestPath -Encoding utf8 -WhatIf:$false
+# Only the six fields a release decides are rewritten, and everything from the playback block on
+# is carried across as the characters it already is. Reading the document in and writing it back
+# out reformats the whole of it — ConvertTo-Json indents nothing like the file is kept in — and
+# playback is what a release must not touch at all: it carries the config already on main, and
+# never reverts it to whatever this working tree happens to hold.
+$raw = Get-Content $manifestPath -Raw
+$playback = $raw.IndexOf('"playback"')
+if ($playback -lt 0) { throw "$manifestPath names no playback block, so it is not a manifest." }
+
+$newline = if ($raw.Contains("`r`n")) { "`r`n" } else { "`n" }
+
+# ConvertTo-Json on a lone string is what quotes and escapes it; notes is free text and the url
+# carries slashes.
+$fields = @(
+    "    ""versionCode"": $versionCode,"
+    "    ""versionName"": $(ConvertTo-Json $VersionName),"
+    "    ""apkUrl"": $(ConvertTo-Json "https://github.com/$repository/releases/download/$tag/$(Split-Path $apk -Leaf)"),"
+    "    ""sha256"": $(ConvertTo-Json $sha256),"
+    "    ""sizeBytes"": $((Get-Item $apk).Length),"
+    "    ""notes"": $(ConvertTo-Json $Notes),"
+)
+
+$manifest = "{$newline" + ($fields -join $newline) + "$newline    " + $raw.Substring($playback)
+
+Set-Content $manifestPath $manifest -Encoding utf8 -NoNewline -WhatIf:$false
 
 Write-Host "=== $apk"
 Write-Host "=== sha256 $sha256"
