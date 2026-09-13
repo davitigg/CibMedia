@@ -70,7 +70,13 @@ $apk = "artifacts/cibmedia-$VersionName.apk"
 New-Item -ItemType Directory -Force artifacts -WhatIf:$false | Out-Null
 Copy-Item $built $apk -Force -WhatIf:$false
 
-$sha256 = (Get-FileHash $apk -Algorithm SHA256).Hash.ToLowerInvariant()
+# Not Get-FileHash: it ships in Microsoft.PowerShell.Utility and is missing on at least one box
+# this is cut from, which failed the release after the build with the version already bumped.
+$sha = [System.Security.Cryptography.SHA256]::Create()
+try { $digest = $sha.ComputeHash([System.IO.File]::ReadAllBytes((Resolve-Path $apk))) }
+finally { $sha.Dispose() }
+
+$sha256 = [BitConverter]::ToString($digest).Replace('-', '').ToLowerInvariant()
 
 # playback stays whatever is committed: a release carries the config already on main, and never
 # reverts it to whatever this working tree happens to hold.
