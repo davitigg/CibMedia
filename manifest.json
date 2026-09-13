@@ -1,10 +1,10 @@
 ﻿{
-    "versionCode":  5,
-    "versionName":  "2.3",
-    "apkUrl":  "https://github.com/davitigg/CibMedia/releases/download/v2.3/cibmedia-2.3.apk",
-    "sha256":  "a668c5ba721731c785be5bc6de3ba659295814672f25fccfbca56a17c0fee27d",
-    "sizeBytes":  27051723,
-    "notes":  "More titles play, and one slow moment no longer hides the rest.",
+    "versionCode":  6,
+    "versionName":  "2.4",
+    "apkUrl":  "https://github.com/davitigg/CibMedia/releases/download/v2.4/cibmedia-2.4.apk",
+    "sha256":  "8a00110b8822775b809a9799da26de26d616bb1db0e6d5228e985351219b13f8",
+    "sizeBytes":  27121355,
+    "notes":  "Playback lookups are bounded and resolve faster; subtitles survive leaving the app.",
     "playback":  {
                      "videoDb":  {
                                      "enabled":  true,
