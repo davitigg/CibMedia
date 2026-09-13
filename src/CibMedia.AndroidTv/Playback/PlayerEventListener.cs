@@ -6,8 +6,11 @@ namespace CibMedia.AndroidTv.Playback;
 // Every member is implemented explicitly. Player.Listener's methods are all default in Java,
 // but the binding's callable wrapper does not carry that through: OnEvents and
 // OnSurfaceSizeChanged threw AbstractMethodError when left unoverridden, killing the process.
-public sealed class PlayerEventListener(Action onEnded, Action<PlaybackException?> onError)
-    : Java.Lang.Object, IPlayerListener
+public sealed class PlayerEventListener(
+    Action onEnded,
+    Action<PlaybackException?> onError,
+    Action<Tracks?> onTracks
+) : Java.Lang.Object, IPlayerListener
 {
     // Player.STATE_ENDED, a Java @IntDef the binding carries no constant for.
     private const int StateEnded = 4;
@@ -147,8 +150,10 @@ public sealed class PlayerEventListener(Action onEnded, Action<PlaybackException
     {
     }
 
+    // The first time a player knows its tracks is the first chance to pick one by name.
     public void OnTracksChanged(Tracks? tracks)
     {
+        onTracks(tracks);
     }
 
     public void OnVideoSizeChanged(VideoSize? videoSize)

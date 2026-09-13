@@ -55,6 +55,12 @@ public sealed class PlaybackActivity : Activity
     // Kept so returning from the background replays it rather than resolving again.
     private PlayableStream? _stream;
 
+    // The subtitle picked on the stream now playing, and whether the player now up has been given
+    // it. Kept for one reason: the player is released every time the box leaves the screen, and
+    // Media3's own record of the pick goes with it.
+    private SubtitleChoice? _subtitle;
+    private bool _subtitleApplied;
+
     // Labels that failed this sitting, so a fallback tries each of a provider's streams once.
     private readonly HashSet<string> _failed = new(StringComparer.OrdinalIgnoreCase);
 
@@ -136,6 +142,10 @@ public sealed class PlaybackActivity : Activity
         _onScreen = false;
 
         SaveProgress();
+
+        // Read off the player that is about to go: OnStart builds a new one, and Media3's own
+        // record of the pick does not outlive the player that was asked for it.
+        _subtitle = SubtitleChoice.Of(_player);
         ReleasePlayer();
 
         base.OnStop();
@@ -267,6 +277,10 @@ public sealed class PlaybackActivity : Activity
     {
         _stream = stream;
 
+        // Another stream carries its own tracks, named its own way, and a pick made against the
+        // one before it means nothing against this one.
+        _subtitle = null;
+
         ControllerMenu.Dismiss();
     }
 
@@ -344,7 +358,9 @@ public sealed class PlaybackActivity : Activity
             .SetMediaSourceFactory(new DefaultMediaSourceFactory(new PngWrappedDataSourceFactory(dataSource!)))!
             .Build();
 
-        _player!.AddListener(new PlayerEventListener(OnPlaybackEnded, OnPlaybackFailed));
+        _player!.AddListener(new PlayerEventListener(OnPlaybackEnded, OnPlaybackFailed, OnTracksChanged));
+
+        _subtitleApplied = false;
 
         // The order the progressive pick used, so an HLS stream's Auto lands on the same dub
         // when its playlist has it. Subtitles wait to be picked from the CC menu: a playlist can
@@ -371,6 +387,16 @@ public sealed class PlaybackActivity : Activity
 
         _progressSaved = false;
         _playbackStartedAt = DateTimeOffset.UtcNow;
+    }
+
+    // The first chance to hand a new player the pick the last one was carrying: a track can only
+    // be overridden once the player has read it. Applied once, because setting the parameters
+    // announces the very change this answers.
+    private void OnTracksChanged(Tracks? tracks)
+    {
+        if (_subtitleApplied || _subtitle is null || _player is not { } player) return;
+
+        _subtitleApplied = _subtitle.ApplyTo(player, tracks);
     }
 
     // Saved before the player is released: OnStop runs after Finish, and by then there is no
