@@ -57,7 +57,9 @@ internal sealed partial class VideoDbPlaybackProvider(
         return await cache.GetOrStoreAsync(
             $"playback:videodb:{type}:{tmdbId}",
             async token => await FetchAsync(type, tmdbId, token),
-            ITmdbPlaybackProvider.AnswerTtl,
+            // A mirror answering "not in catalogue" is upstream stating a fact about itself, so a
+            // null here is worth exactly as long as a playlist is.
+            _ => ITmdbPlaybackProvider.AnswerTtl,
             cancellationToken);
     }
 

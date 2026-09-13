@@ -21,8 +21,23 @@ internal sealed partial class XpassClient(
     // One budget for every hop this makes rather than one each, so a slow title costs a bounded
     // wait instead of the sum of them. Kept under the client's own timeout so the cut is always
     // this side's to name. The box runs these hops around four times slower than a desktop, which
-    // six seconds a hop did not leave room for.
-    private static readonly TimeSpan ReadBudget = TimeSpan.FromSeconds(9);
+    // six seconds a hop did not leave room for. It covers the page and the payload only: the
+    // bundle walk belongs to the stack rather than to this title and carries its own.
+    private static readonly TimeSpan ReadBudget = TimeSpan.FromSeconds(8);
+
+    // The page the walk reads to find the bundles. It names no title because it does not need one:
+    // every embed path serves the same shell, and asking for a real id would put a title nobody
+    // opened through the rest of the stack.
+    private const string WarmPath = "/e/movie/0";
+
+    // Reads the build id before anything asks for a title, so no lookup pays the bundle walk. On a
+    // warm cache this costs one page fetch and no walk at all.
+    public async Task WarmAsync(CancellationToken cancellationToken)
+    {
+        var page = await http.GetStringAsync($"https://{options.PlayerHost}{WarmPath}", cancellationToken);
+
+        await buildIds.GetAsync(page, cancellationToken);
+    }
 
     // The servers the embed offers for a title, in the embed's own order, or empty when the title
     // is not in the catalogue.
@@ -72,7 +87,10 @@ internal sealed partial class XpassClient(
         // A tag mismatch is what a redeployed player looks like from here.
         logger.XpassBuildIdStale(buildId);
 
-        var refreshed = await buildIds.RefreshAsync(page, cancellationToken);
+        // Off this title's budget, which by here is mostly or entirely spent: under it the one walk
+        // that recovers a redeployed player would be cancelled before it started, and every title
+        // would read as one xpass does not carry.
+        var refreshed = await buildIds.RefreshAsync(page, CancellationToken.None);
         if (refreshed is null || refreshed == buildId) return [];
 
         var underRefreshed = Decrypt(ciphertext, pathname, token, refreshed);

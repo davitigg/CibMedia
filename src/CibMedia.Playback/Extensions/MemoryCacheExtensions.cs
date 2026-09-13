@@ -13,7 +13,7 @@ internal static class MemoryCacheExtensions
         this IMemoryCache cache,
         string key,
         Func<CancellationToken, ValueTask<T>> factory,
-        TimeSpan lifetime,
+        Func<T, TimeSpan> lifetime,
         CancellationToken cancellationToken
     )
     {
@@ -34,14 +34,16 @@ internal static class MemoryCacheExtensions
         IMemoryCache cache,
         string key,
         Func<CancellationToken, ValueTask<T>> factory,
-        TimeSpan lifetime
+        Func<T, TimeSpan> lifetime
     )
     {
         try
         {
             var value = await factory(CancellationToken.None);
 
-            cache.Set(key, value, lifetime);
+            // The answer decides how long it is worth holding: what an upstream carries and what it
+            // merely failed to prove today are not good for the same span.
+            cache.Set(key, value, lifetime(value));
 
             return value;
         }

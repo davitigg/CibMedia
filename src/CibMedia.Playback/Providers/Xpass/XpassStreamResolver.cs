@@ -27,32 +27,33 @@ internal sealed class XpassStreamResolver(HttpClient http, XpassOptions options,
     // is appended behind it.
     private const int MaxCandidates = 12;
 
+    // How many probes run at once. A replacement starts the moment one lands rather than when the
+    // whole group does, so one slow candidate costs its own place and nobody else's.
+    private const int InFlight = 4;
+
     // A prefix names a CDN family, never an encode: one measured episode had LUL 1-4 and LUL 8 at
-    // 404 while LUL 5-7 played. So candidates go in waves rather than in one take, and a family is
-    // capped inside a wave — otherwise the eight LUL entries spend the whole of it on one guess.
-    private const int WaveSize = 4;
-    private const int PerFamilyPerWave = 2;
+    // 404 while LUL 5-7 played. Capping a family in flight is what stops the eight LUL entries
+    // holding every slot on one guess; a candidate passed over keeps its place for the moment one
+    // of its siblings lands.
+    private const int PerFamilyInFlight = 2;
 
     // What the Streams picker is offered: two fallbacks behind the one that plays, which is as far
-    // as a sitting ever gets. Stopping here is what keeps a title off the later waves.
+    // as a sitting ever gets. Nothing is started once this many have verified or are one probe from
+    // it, which is what keeps a title off the candidates behind them.
     private const int EnoughStreams = 3;
 
-    // Verifying a server is four sequential hops: playlist, master, variant, segment. A wave runs
-    // its candidates concurrently, so the wave deadline is the ceiling one adds to the response.
-    // The hop timeout is what stops a host that never answers from holding the wave at that
-    // ceiling on its own, and it is measured on the box rather than on a desktop: a LUL master on
-    // a cold Cloudflare worker clears two seconds from a desktop but not from the box, where at
-    // that budget every LUL server failed a hop and xpass offered the fastest server alone. At
-    // four the same title offers four.
+    // Verifying a server is four sequential hops: playlist, master, variant, segment. This is what
+    // stops a host that never answers from spending the whole probe on its own, and it is measured
+    // on the box rather than on a desktop: a LUL master on a cold Cloudflare worker clears two
+    // seconds from a desktop but not from the box, where at that budget every LUL server failed a
+    // hop and xpass offered the fastest server alone. At four the same title offers four.
     private static readonly TimeSpan HopTimeout = TimeSpan.FromSeconds(4);
-    private static readonly TimeSpan WaveDeadline = TimeSpan.FromSeconds(6);
 
-    // Only a title the earlier waves left short reaches a later one, and this is what stops that
-    // title from costing every wave's deadline in turn. Two full waves and most of a third: the
-    // box resolves a cold title in around three times what a desktop does — 11s measured against
-    // 3.5s — so at twelve a third wave could not start, and the titles that need one are the
-    // titles that otherwise carry nothing.
-    private static readonly TimeSpan ProbeDeadline = TimeSpan.FromSeconds(15);
+    // The whole probe, and the only deadline above the hop: a candidate is now dropped when its own
+    // hops run out rather than when a group it happened to share is cut, so there is no second
+    // deadline discarding work this one still has room for. Twelve seconds is three full turns of
+    // the pool on the box, which measured at 6-11s for a title that answers at all.
+    private static readonly TimeSpan ProbeDeadline = TimeSpan.FromSeconds(12);
 
     // Ordering only; correctness comes from the byte check. Set from ten titles rather than
     // guessed — VIP carried 9 of 10, TIK 7 of 9, LUL 26 of 42, WIS 10 of 21, against FIL at 4 of 26
@@ -79,73 +80,83 @@ internal sealed class XpassStreamResolver(HttpClient http, XpassOptions options,
         CancellationToken cancellationToken
     )
     {
-        // OrderBy is stable, so ties keep the embed's own order.
+        // OrderBy is stable, so ties keep the embed's own order, and the place a candidate takes
+        // here is the place its stream takes in the answer.
         var candidates = servers
             .Where(server => !string.IsNullOrWhiteSpace(server.Url))
-            .Select((server, index) => new Candidate(server, LabelFor(server, index)))
-            .OrderBy(candidate => Rank(candidate.Server))
+            .Select((server, index) => (Server: server, Label: LabelFor(server, index)))
+            .OrderBy(entry => Rank(entry.Server))
             .Take(MaxCandidates)
+            .Select((entry, place) => new Candidate(entry.Server, entry.Label, place))
             .ToList();
 
         using var probe = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         probe.CancelAfter(ProbeDeadline);
 
-        var streams = new List<PlaybackStream>();
+        var pending = new LinkedList<Candidate>(candidates);
+        var running = new List<Task<Probe>>();
+        var families = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var verified = new SortedDictionary<int, PlaybackStream>();
 
-        foreach (var wave in Waves(candidates))
+        try
         {
-            if (probe.IsCancellationRequested) break;
+            while (true)
+            {
+                Fill(pending, running, families, verified.Count, probe.Token);
 
-            streams.AddRange(await RunWaveAsync(wave, probe.Token));
+                if (running.Count is 0) break;
 
-            if (streams.Count >= EnoughStreams) break;
+                var finished = await Task.WhenAny(running);
+                running.Remove(finished);
+
+                var probed = await finished;
+
+                families[Family(probed.Candidate.Server.Name)] -= 1;
+
+                if (probed.Stream is { } stream) verified[probed.Candidate.Place] = stream;
+
+                if (verified.Count >= EnoughStreams || probe.IsCancellationRequested) break;
+            }
+        }
+        finally
+        {
+            await probe.CancelAsync();
+
+            // Awaited so nothing still holds a token from a source about to go out of scope. The
+            // faults are dropped: throwing from here would replace the answer, or the 429 that
+            // ended it, with whatever a probe nobody is waiting for hit on its way out.
+            await ((Task)Task.WhenAll(running)).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
         }
 
-        // A wave answers as a whole, so the one that reaches the count can carry past it.
-        return streams.Count > EnoughStreams ? streams[..EnoughStreams] : streams;
+        return verified.Values.Take(EnoughStreams).ToList();
     }
 
-    private async Task<IReadOnlyList<PlaybackStream>> RunWaveAsync(
-        IReadOnlyList<Candidate> wave,
+    // Tops the pool back up in ranked order, passing over a candidate whose family already has its
+    // share in flight. Counting what has verified alongside what is running is what stops a probe
+    // being started for a place the answer is already going to fill.
+    private void Fill(
+        LinkedList<Candidate> pending,
+        List<Task<Probe>> running,
+        Dictionary<string, int> families,
+        int verified,
         CancellationToken cancellationToken
     )
     {
-        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        deadline.CancelAfter(WaveDeadline);
+        if (cancellationToken.IsCancellationRequested) return;
 
-        var verified = await Task.WhenAll(
-            wave.Select(candidate => VerifyAsync(candidate.Server, candidate.Label, deadline.Token)));
-
-        return verified.OfType<PlaybackStream>().ToList();
-    }
-
-    // Walks the ranked order filling one wave at a time, passing over a candidate whose family is
-    // already at its cap for that wave — so it keeps its place and lands in the next one.
-    private static IEnumerable<List<Candidate>> Waves(IReadOnlyList<Candidate> candidates)
-    {
-        var pending = new LinkedList<Candidate>(candidates);
-
-        while (pending.Count > 0)
+        for (var node = pending.First; node is not null && verified + running.Count < InFlight;)
         {
-            var wave = new List<Candidate>(WaveSize);
-            var taken = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var next = node.Next;
+            var family = Family(node.Value.Server.Name);
 
-            for (var node = pending.First; node is not null && wave.Count < WaveSize;)
+            if (families.GetValueOrDefault(family) < PerFamilyInFlight)
             {
-                var next = node.Next;
-                var family = Family(node.Value.Server.Name);
-
-                if (taken.GetValueOrDefault(family) < PerFamilyPerWave)
-                {
-                    taken[family] = taken.GetValueOrDefault(family) + 1;
-                    wave.Add(node.Value);
-                    pending.Remove(node);
-                }
-
-                node = next;
+                families[family] = families.GetValueOrDefault(family) + 1;
+                running.Add(VerifyAsync(node.Value, cancellationToken));
+                pending.Remove(node);
             }
 
-            yield return wave;
+            node = next;
         }
     }
 
@@ -177,31 +188,31 @@ internal sealed class XpassStreamResolver(HttpClient http, XpassOptions options,
         return string.IsNullOrWhiteSpace(server.Name) ? $"Server {index + 1}" : server.Name.Trim();
     }
 
-    private async Task<PlaybackStream?> VerifyAsync(
-        XpassServer server,
-        string label,
-        CancellationToken cancellationToken
-    )
+    // Answers with its candidate whatever the outcome, so the pool can put the family's slot back
+    // without holding a second structure to map a task to the server that started it.
+    private async Task<Probe> VerifyAsync(Candidate candidate, CancellationToken cancellationToken)
     {
         try
         {
-            var master = await ResolveMasterAsync(server.Url!, cancellationToken);
+            var master = await ResolveMasterAsync(candidate.Server.Url!, cancellationToken);
 
-            return master is not null && await CarriesTransportStreamAsync(master, cancellationToken)
-                ? new HlsStream(master, label)
-                : null;
+            return new Probe(
+                candidate,
+                master is not null && await CarriesTransportStreamAsync(master, cancellationToken)
+                    ? new HlsStream(master, candidate.Label)
+                    : null);
         }
         catch (Exception exception) when (IsServerFault(exception))
         {
-            // The wave ending is not the server's fault; a hop timing out is.
-            if (cancellationToken.IsCancellationRequested) logger.XpassServerUnfinished(server.Name);
-            else logger.XpassServerUnverified(server.Name, exception);
+            // The deadline arriving is not the server's fault; a hop timing out is.
+            if (cancellationToken.IsCancellationRequested) logger.XpassServerUnfinished(candidate.Server.Name);
+            else logger.XpassServerUnverified(candidate.Server.Name, exception);
 
-            return null;
+            return new Probe(candidate, null);
         }
     }
 
-    // A 429 is the origin refusing the wave, not this server failing to verify, so it is left to
+    // A 429 is the origin refusing the burst, not this server failing to verify, so it is left to
     // propagate: swallowed, it would report the title as sourceless and have that cached as a miss.
     private static bool IsServerFault(Exception exception)
     {
@@ -333,7 +344,11 @@ internal sealed class XpassStreamResolver(HttpClient http, XpassOptions options,
         return hop;
     }
 
-    private sealed record Candidate(XpassServer Server, string Label);
+    // Place is where the candidate ranked, which is the order the streams are offered in however
+    // the probes happened to land.
+    private sealed record Candidate(XpassServer Server, string Label, int Place);
+
+    private sealed record Probe(Candidate Candidate, PlaybackStream? Stream);
 
     private HttpRequestMessage NewRequest(Uri uri)
     {

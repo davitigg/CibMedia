@@ -11,10 +11,10 @@ public sealed class XpassStreamResolverTests
 {
     private const string Origin = "https://play.example/";
 
-    private const int WaveSize = 4;
+    private const int InFlight = 4;
 
     [Fact]
-    public async Task Stops_at_the_first_wave_that_carries_enough()
+    public async Task Starts_nothing_behind_the_answer_it_already_has()
     {
         var upstream = new FakeUpstream();
         upstream.Plays("VIP 1");
@@ -28,7 +28,8 @@ public sealed class XpassStreamResolverTests
         Assert.DoesNotContain("LUL 7", upstream.Asked);
     }
 
-    // A wave answers as a whole, so the fourth that verified alongside them is not offered.
+    // The pool runs one probe more than the answer needs, so a fourth can verify alongside the
+    // three that fill it.
     [Fact]
     public async Task Offers_no_more_than_it_stopped_at()
     {
@@ -44,7 +45,7 @@ public sealed class XpassStreamResolverTests
     }
 
     [Fact]
-    public async Task Reaches_a_later_wave_when_the_first_carries_nothing()
+    public async Task Reaches_the_candidates_behind_a_pool_that_carried_nothing()
     {
         var upstream = new FakeUpstream();
         upstream.Plays("LUL 7");
@@ -58,9 +59,9 @@ public sealed class XpassStreamResolverTests
         Assert.Contains("LUL 7", upstream.Asked);
     }
 
-    // Eight LUL entries would otherwise spend the whole wave on one family's guess.
+    // Eight LUL entries would otherwise hold every slot on one family's guess.
     [Fact]
-    public async Task Caps_a_family_inside_one_wave()
+    public async Task Caps_a_family_in_flight()
     {
         var upstream = new FakeUpstream();
         upstream.Plays("VIP 1");
@@ -71,7 +72,46 @@ public sealed class XpassStreamResolverTests
             Named("LUL 1", "LUL 2", "LUL 3", "LUL 4", "LUL 5", "VIP 1", "MOL 1"));
 
         Assert.Equal(["MOL 1", "VIP 1"], streams.Select(stream => stream.Label).Order());
-        Assert.Equal(["LUL 1", "LUL 2", "VIP 1", "MOL 1"], upstream.Asked.Take(WaveSize));
+        Assert.Equal(["LUL 1", "LUL 2", "VIP 1", "MOL 1"], upstream.Asked.Take(InFlight));
+    }
+
+    // The slot a probe holds is its own: a candidate still waiting holds neither the ones started
+    // beside it nor the ones queued behind it.
+    [Fact]
+    public async Task Fills_the_slot_a_finished_probe_leaves_while_another_is_still_waiting()
+    {
+        var upstream = new FakeUpstream();
+        upstream.Holds("VIP 1");
+        upstream.Plays("MOL 1");
+
+        var probe = Resolve(upstream, Named("VIP 1", "WIS 1", "TIK 1", "LUL 1", "MOL 1"));
+
+        await upstream.Reached("MOL 1");
+        upstream.Release();
+
+        var streams = await probe;
+
+        Assert.Equal(["MOL 1"], streams.Select(stream => stream.Label));
+    }
+
+    // Probes land in whatever order the hosts answer; what is offered is the order they ranked in,
+    // because the first stream in the list is the one the player starts on.
+    [Fact]
+    public async Task Offers_the_streams_in_ranked_order_however_they_landed()
+    {
+        var upstream = new FakeUpstream();
+        upstream.Holds("VIP 1");
+        upstream.Plays("VIP 1");
+        upstream.Plays("MOL 1");
+
+        var probe = Resolve(upstream, Named("VIP 1", "MOL 1"));
+
+        await upstream.Reached("MOL 1");
+        upstream.Release();
+
+        var streams = await probe;
+
+        Assert.Equal(["VIP 1", "MOL 1"], streams.Select(stream => stream.Label));
     }
 
     // The head strips the wrapper, so a wrapped segment counts as carried and its server takes the
@@ -140,8 +180,13 @@ public sealed class XpassStreamResolverTests
         private readonly HashSet<string> _missing = [];
         private readonly HashSet<string> _wrapped = [];
         private readonly HashSet<string> _hollow = [];
+        private readonly HashSet<string> _held = [];
         private readonly List<string> _asked = [];
         private readonly List<string> _fetched = [];
+        private readonly TaskCompletionSource _release = new();
+
+        private readonly Dictionary<string, TaskCompletionSource> _reached =
+            new(StringComparer.Ordinal);
 
         public IReadOnlyList<string> Asked => _asked;
 
@@ -159,7 +204,17 @@ public sealed class XpassStreamResolverTests
 
         public void Missing(string server) => _missing.Add(server);
 
-        protected override Task<HttpResponseMessage> SendAsync(
+        // Answers nothing until Release, which is the shape of a host that is reachable but slow.
+        public void Holds(string server) => _held.Add(server);
+
+        public void Release() => _release.TrySetResult();
+
+        public Task Reached(string server)
+        {
+            lock (_reached) return Slot(server).Task;
+        }
+
+        protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken
         )
@@ -173,6 +228,9 @@ public sealed class XpassStreamResolverTests
                 var server = url[$"{Origin}playlist/".Length..];
 
                 lock (_asked) _asked.Add(server);
+                lock (_reached) Slot(server).TrySetResult();
+
+                if (_held.Contains(server)) await _release.Task.WaitAsync(cancellationToken);
 
                 if (_missing.Contains(server)) return Text($@"[{{""sources"":[{{""file"":""/video/error""}}]}}]");
                 if (!_playing.Contains(server)) return Status(HttpStatusCode.NotFound);
@@ -187,13 +245,26 @@ public sealed class XpassStreamResolverTests
             {
                 var server = url["https://cdn.example/".Length..].Split('/')[0];
 
-                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.PartialContent)
+                return new HttpResponseMessage(HttpStatusCode.PartialContent)
                 {
                     Content = new ByteArrayContent(Segment(_wrapped.Contains(server), _hollow.Contains(server)))
-                });
+                };
             }
 
             return Status(HttpStatusCode.NotFound);
+        }
+
+        // Callers hold the lock: a slot is created by whichever of the test and the probe gets
+        // there first.
+        private TaskCompletionSource Slot(string server)
+        {
+            if (!_reached.TryGetValue(server, out var slot))
+            {
+                slot = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                _reached[server] = slot;
+            }
+
+            return slot;
         }
 
         // A wrapped segment is the transport stream appended to a complete 1x1 PNG, prefix length
@@ -218,17 +289,17 @@ public sealed class XpassStreamResolverTests
             return wrapped ? [.. png, .. packets] : packets;
         }
 
-        private static Task<HttpResponseMessage> Text(string body)
+        private static HttpResponseMessage Text(string body)
         {
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            return new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent(body, Encoding.UTF8)
-            });
+            };
         }
 
-        private static Task<HttpResponseMessage> Status(HttpStatusCode code)
+        private static HttpResponseMessage Status(HttpStatusCode code)
         {
-            return Task.FromResult(new HttpResponseMessage(code) { Content = new StringContent("") });
+            return new HttpResponseMessage(code) { Content = new StringContent("") };
         }
     }
 }

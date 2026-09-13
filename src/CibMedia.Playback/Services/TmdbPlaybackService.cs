@@ -7,6 +7,15 @@ namespace CibMedia.Playback.Services;
 
 public sealed class TmdbPlaybackService
 {
+    // What a caller waits, whatever the stacks are doing. Each stack bounds its own hops and this
+    // is the only thing that bounds their sum: a cold bundle walk in front of a full probe reaches
+    // half a minute, and the spinner is on the details page for the whole of it.
+    //
+    // A cut here is this side's, so it is not evidence about a stack and opens no outage window,
+    // and the run it cut is left to finish into the cache — the next press reads the answer it
+    // produced rather than starting the work again.
+    private static readonly TimeSpan LookupBudget = TimeSpan.FromSeconds(20);
+
     private readonly List<ITmdbPlaybackProvider> _enabled;
     private readonly ILogger<TmdbPlaybackService> _logger;
 
@@ -21,7 +30,8 @@ public sealed class TmdbPlaybackService
         return ResolveAsync(
             $"Movie {tmdbId}",
             PlaybackMediaType.Movie,
-            provider => provider.GetMovieAsync(tmdbId, cancellationToken));
+            (provider, token) => provider.GetMovieAsync(tmdbId, token),
+            cancellationToken);
     }
 
     public Task<ResolvedPlayback?> GetEpisodeAsync(
@@ -34,7 +44,8 @@ public sealed class TmdbPlaybackService
         return ResolveAsync(
             $"TV Show {tmdbId} S{season}E{episode}",
             PlaybackMediaType.TvShow,
-            provider => provider.GetEpisodeAsync(tmdbId, season, episode, cancellationToken));
+            (provider, token) => provider.GetEpisodeAsync(tmdbId, season, episode, token),
+            cancellationToken);
     }
 
     // A provider that fell over accounts for itself, so the outcome stays at information whether or
@@ -42,12 +53,16 @@ public sealed class TmdbPlaybackService
     private async Task<ResolvedPlayback?> ResolveAsync(
         string lookup,
         PlaybackMediaType mediaType,
-        Func<ITmdbPlaybackProvider, Task<PlaybackSource?>> resolve
+        Func<ITmdbPlaybackProvider, CancellationToken, Task<PlaybackSource?>> resolve,
+        CancellationToken cancellationToken
     )
     {
         var started = Stopwatch.GetTimestamp();
 
-        var sources = await GatherAsync(lookup, resolve);
+        using var budget = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        budget.CancelAfter(LookupBudget);
+
+        var sources = await GatherAsync(lookup, resolve, budget.Token, cancellationToken);
 
         var elapsed = (long)Stopwatch.GetElapsedTime(started).TotalMilliseconds;
 
@@ -74,10 +89,13 @@ public sealed class TmdbPlaybackService
     // is logged: it is the only record that an answer came back short.
     private async Task<List<PlaybackSource>> GatherAsync(
         string lookup,
-        Func<ITmdbPlaybackProvider, Task<PlaybackSource?>> resolve
+        Func<ITmdbPlaybackProvider, CancellationToken, Task<PlaybackSource?>> resolve,
+        CancellationToken budget,
+        CancellationToken cancellationToken
     )
     {
-        var outcomes = await Task.WhenAll(_enabled.Select(provider => RunAsync(provider, lookup, resolve)));
+        var outcomes = await Task.WhenAll(
+            _enabled.Select(provider => RunAsync(provider, lookup, resolve, budget, cancellationToken)));
 
         var failures = outcomes.Select(outcome => outcome.Error).OfType<Exception>().ToList();
 
@@ -91,16 +109,32 @@ public sealed class TmdbPlaybackService
     private async Task<Outcome> RunAsync(
         ITmdbPlaybackProvider provider,
         string lookup,
-        Func<ITmdbPlaybackProvider, Task<PlaybackSource?>> resolve
+        Func<ITmdbPlaybackProvider, CancellationToken, Task<PlaybackSource?>> resolve,
+        CancellationToken budget,
+        CancellationToken cancellationToken
     )
     {
         try
         {
-            return new Outcome(await resolve(provider), null);
+            return new Outcome(await resolve(provider, budget), null);
         }
         catch (PlaybackOutageException exception)
         {
             _logger.ProviderSkipped(provider.Provider, lookup);
+
+            return new Outcome(null, exception);
+        }
+        // The caller walked off the screen. Not a fault, and not an answer either: reported as one
+        // it would be a warning per stack for every title anyone stepped out of.
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        // The budget, and only the budget: an upstream's own timeout arrives as a cancellation too,
+        // and that one is evidence about the stack rather than about how long this lookup ran.
+        catch (OperationCanceledException exception) when (budget.IsCancellationRequested)
+        {
+            _logger.ProviderUnfinished(provider.Provider, lookup, LookupBudget);
 
             return new Outcome(null, exception);
         }

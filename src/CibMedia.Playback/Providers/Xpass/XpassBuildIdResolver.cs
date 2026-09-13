@@ -19,6 +19,12 @@ internal sealed partial class XpassBuildIdResolver(
     // an outage.
     private static readonly TimeSpan Ttl = TimeSpan.FromDays(30);
 
+    // The walk is two more downloads of bundles that run to megabytes. Its callers start it off
+    // their own budget on purpose — a walk cut short is one the next title repeats — so without
+    // this it would have none but the client's per-request timeout, and two of those in a row put
+    // a cold lookup past twenty seconds before a single server had been probed.
+    private static readonly TimeSpan WalkBudget = TimeSpan.FromSeconds(8);
+
     // The build id keying the decrypt: cached, or extracted from the live bundles when the cache is
     // cold. Null when the bundles no longer match the extraction recipe.
     public async Task<string?> GetAsync(string pageHtml, CancellationToken cancellationToken)
@@ -28,9 +34,27 @@ internal sealed partial class XpassBuildIdResolver(
         return string.IsNullOrWhiteSpace(cached) ? await RefreshAsync(pageHtml, cancellationToken) : cached;
     }
 
+    public async Task<string?> RefreshAsync(string pageHtml, CancellationToken cancellationToken)
+    {
+        using var walk = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        walk.CancelAfter(WalkBudget);
+
+        try
+        {
+            return await WalkAsync(pageHtml, walk.Token);
+        }
+        catch (OperationCanceledException)
+            when (walk.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            logger.XpassBuildIdUnfinished(WalkBudget);
+
+            return null;
+        }
+    }
+
     // Walks page → mainmini.js → player bundle. The player script has a random per-deploy name that
     // exists only inside mainmini's string table, and the build id only inside the player's.
-    public async Task<string?> RefreshAsync(string pageHtml, CancellationToken cancellationToken)
+    private async Task<string?> WalkAsync(string pageHtml, CancellationToken cancellationToken)
     {
         // Error rather than warning: each of these means the extraction recipe no longer matches
         // the bundles, and xpass stays dark until the code changes.

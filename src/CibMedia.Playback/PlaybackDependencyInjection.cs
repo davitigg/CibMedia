@@ -68,6 +68,11 @@ public static class PlaybackDependencyInjection
 
             services.AddScoped(scope => new PlaybackProvidersService(scope.GetServices<ITmdbPlaybackProvider>()));
 
+            services.AddScoped(scope => new PlaybackWarmupService(
+                scope.GetRequiredService<XpassClient>(),
+                scope.GetRequiredService<XpassOptions>(),
+                scope.GetRequiredService<ILogger<PlaybackWarmupService>>()));
+
             services.AddSingleton(scope => new PlaybackCacheService(scope.GetRequiredService<IMemoryCache>()));
 
             return services;

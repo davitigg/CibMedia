@@ -8,6 +8,7 @@ using CibMedia.Core.Infrastructure.Updates;
 using CibMedia.Core.Presentation.Playback;
 using CibMedia.Core.Presentation.Remote;
 using CibMedia.Playback;
+using CibMedia.Playback.Services;
 using CibMedia.AndroidTv.Leanback.Presenters;
 using CibMedia.AndroidTv.Platform;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,7 +26,14 @@ public static class AppServices
 
     public static void Initialise(Context context)
     {
-        _provider ??= Build(context.ApplicationContext ?? context);
+        if (_provider is not null) return;
+
+        _provider = Build(context.ApplicationContext ?? context);
+
+        // The one cost a lookup cannot avoid paying on a cold process, paid here while nothing is
+        // waiting on it. Not awaited and not observed: it changes no answer, and a launch does not
+        // wait on an upstream.
+        _ = _provider.GetRequiredService<PlaybackWarmupService>().WarmAsync(CancellationToken.None);
     }
 
     // The published manifest, on the branch a release is cut from. Config travels here and an

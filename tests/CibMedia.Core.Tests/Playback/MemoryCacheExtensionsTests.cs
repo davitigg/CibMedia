@@ -6,7 +6,7 @@ namespace CibMedia.Core.Tests.Playback;
 
 public sealed class MemoryCacheExtensionsTests
 {
-    private static readonly TimeSpan AMinute = TimeSpan.FromMinutes(1);
+    private static readonly Func<int, TimeSpan> AMinute = _ => TimeSpan.FromMinutes(1);
 
     // Details and playback resolve the same title separately and overlap, which used to run every
     // upstream request twice.
@@ -74,6 +74,28 @@ public sealed class MemoryCacheExtensionsTests
         gate.SetResult();
 
         Assert.Equal(7, await waiting);
+    }
+
+    // The lifetime comes from the answer, not from the call: a stack that offered servers and
+    // proved none of them is worth asking again long before a title nobody carries is.
+    [Fact]
+    public async Task Asks_the_answer_how_long_it_is_worth_holding()
+    {
+        using var cache = new MemoryCache(new MemoryCacheOptions());
+        var asked = new List<int>();
+
+        await cache.GetOrStoreAsync(
+            "k",
+            _ => new ValueTask<int>(7),
+            value =>
+            {
+                asked.Add(value);
+
+                return TimeSpan.FromMinutes(1);
+            },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal([7], asked);
     }
 
     // A throw caches nothing and leaves no flight behind, or one upstream blip would be answered

@@ -95,13 +95,34 @@ internal static partial class PlaybackLog
         Message = "xpass server {Server} did not verify")]
     public static partial void XpassServerUnverified(this ILogger logger, string? server, Exception exception);
 
-    // A server the wave cut off is dropped as silently as one that failed, and the count that
+    // A server the deadline cut off is dropped as silently as one that failed, and the count that
     // reaches the player is the only other place it would show.
     [LoggerMessage(
         EventId = 2008,
         Level = LogLevel.Debug,
-        Message = "xpass server {Server} did not finish before the wave deadline")]
+        Message = "xpass server {Server} did not finish before the probe deadline")]
     public static partial void XpassServerUnfinished(this ILogger logger, string? server);
+
+    // Warning, and the one line that tells a thin title apart from a stack having a bad few
+    // minutes: both reach the head as nothing to play.
+    [LoggerMessage(
+        EventId = 2010,
+        Level = LogLevel.Warning,
+        Message = "xpass offered {ServerCount} server(s) for {Path} and none of them verified")]
+    public static partial void XpassNothingVerified(this ILogger logger, string path, int serverCount);
+
+    // Information rather than warning: the budget running out is this side's decision, and the run
+    // it cut is left to finish into the cache for whoever asks next.
+    [LoggerMessage(
+        EventId = 2011,
+        Level = LogLevel.Information,
+        Message = "provider {Provider} did not answer for {Lookup} inside {Budget}")]
+    public static partial void ProviderUnfinished(
+        this ILogger logger,
+        PlaybackProvider provider,
+        string lookup,
+        TimeSpan budget
+    );
 
     // Warning rather than debug: no breaker covers the subtitle host, so this is the only place a
     // stack playing without its tracks says so. It costs one line per resolved title, not per call.
@@ -110,6 +131,14 @@ internal static partial class PlaybackLog
         Level = LogLevel.Warning,
         Message = "xpass subtitles are unavailable; its streams are offered without tracks")]
     public static partial void XpassSubtitlesUnavailable(this ILogger logger, Exception exception);
+
+    // Debug: warming only moves a cost off the first lookup, so failing to do it changes no answer
+    // and the lookup that pays it instead reports for itself.
+    [LoggerMessage(
+        EventId = 2012,
+        Level = LogLevel.Debug,
+        Message = "playback warmup did not finish; the first lookup pays for it")]
+    public static partial void PlaybackWarmupFailed(this ILogger logger, Exception exception);
 
     // Debug: liveball mints tokens for dark channels too, so an edge that cannot be reached is the
     // ordinary shape of a channel being off air.
@@ -155,6 +184,14 @@ internal static partial class PlaybackLog
         Level = LogLevel.Warning,
         Message = "xpass decrypt failed again under refreshed build {BuildId}; the payload shape has changed")]
     public static partial void XpassDecryptUnreadable(this ILogger logger, string buildId);
+
+    // Warning, not error: the recipe still matches, the walk just ran long. The next lookup on a
+    // cold cache walks again.
+    [LoggerMessage(
+        EventId = 3009,
+        Level = LogLevel.Warning,
+        Message = "xpass build id walk did not finish inside {Budget}")]
+    public static partial void XpassBuildIdUnfinished(this ILogger logger, TimeSpan budget);
 
     [LoggerMessage(
         EventId = 3005,

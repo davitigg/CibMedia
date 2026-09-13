@@ -47,7 +47,7 @@ internal sealed class XpassPlaybackProvider(
         var resolved = await cache.GetOrStoreAsync(
             $"playback:xpass:{path}",
             async token => await ResolveAsync(path, token),
-            ITmdbPlaybackProvider.AnswerTtl,
+            Lifetime,
             cancellationToken);
 
         if (resolved.Streams.Count is 0) return null;
@@ -67,6 +67,15 @@ internal sealed class XpassPlaybackProvider(
             resolved.Subtitles);
     }
 
+    // Servers offered and none of them verified is not the catalogue saying no, and it is the one
+    // answer here that a bad few minutes upstream produces on its own.
+    private static TimeSpan Lifetime(XpassResolved resolved)
+    {
+        return resolved is { ServersOffered: > 0, Streams.Count: 0 }
+            ? ITmdbPlaybackProvider.UnverifiedTtl
+            : ITmdbPlaybackProvider.AnswerTtl;
+    }
+
     // Called from inside the cache factory: a hit never reaches upstream, so the flag costs nothing.
     private async Task<XpassResolved> ResolveAsync(string path, CancellationToken cancellationToken)
     {
@@ -84,9 +93,13 @@ internal sealed class XpassPlaybackProvider(
             var streams = servers.Count is 0 ? [] : await resolver.ProbeAsync(servers, cancellationToken);
             var tracks = await subtitlesTask;
 
+            // The count is the only record that the stack had something to offer and none of it
+            // held up; downstream this answer is indistinguishable from a title nobody carries.
+            if (servers.Count > 0 && streams.Count is 0) logger.XpassNothingVerified(path, servers.Count);
+
             // A source carrying subtitles without video would invite pairing them with another
             // stack's encode, which does not line up.
-            return new XpassResolved(streams, streams.Count is 0 ? [] : tracks);
+            return new XpassResolved(servers.Count, streams, streams.Count is 0 ? [] : tracks);
         }
         catch (Exception exception) when (exception.IsUpstreamFault(cancellationToken))
         {

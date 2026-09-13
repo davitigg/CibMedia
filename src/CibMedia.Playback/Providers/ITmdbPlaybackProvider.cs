@@ -13,6 +13,13 @@ internal interface ITmdbPlaybackProvider
     // how long an upstream keeps a signed url alive. The cache goes with the app either way.
     static readonly TimeSpan AnswerTtl = TimeSpan.FromMinutes(10);
 
+    // What an answer is worth when the stack offered servers and none of them verified. That is a
+    // bad few minutes at one CDN far more often than a title nobody carries: a measured title went
+    // from nothing to playing inside half an hour with no other change, and at AnswerTtl the first
+    // reading of it was held long after it stopped being true. A stack that says for itself it has
+    // no such title keeps the full span — that answer does not go stale.
+    static readonly TimeSpan UnverifiedTtl = TimeSpan.FromSeconds(45);
+
     // What a negative answer is worth: a dead upstream costs one slow request per window rather
     // than one per lookup. Both are short because a window re-arms — when it lapses one request
     // goes out, and a stack still down opens it again — so length buys nothing but fewer probes,
