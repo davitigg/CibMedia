@@ -1,36 +1,36 @@
 ﻿{
-    "versionCode":  6,
-    "versionName":  "2.4",
-    "apkUrl":  "https://github.com/davitigg/CibMedia/releases/download/v2.4/cibmedia-2.4.apk",
-    "sha256":  "8a00110b8822775b809a9799da26de26d616bb1db0e6d5228e985351219b13f8",
-    "sizeBytes":  27121355,
-    "notes":  "Playback lookups are bounded and resolve faster; subtitles survive leaving the app.",
-    "playback":  {
-                     "videoDb":  {
-                                     "enabled":  true,
-                                     "hosts":  [
-                                                   "videodb.stream",
-                                                   "em.kinoflix.co",
-                                                   "em.filmix.stream"
-                                               ]
-                                 },
-                     "xpass":  {
-                                   "enabled":  true,
-                                   "playerHost":  "play.xpass.top",
-                                   "subtitleHost":  "sub.1x2.space"
-                               },
-                     "liveball":  {
-                                      "enabled":  true,
-                                      "pageHosts":  [
-                                                        "liveball.sx"
-                                                    ],
-                                      "keyPages":  [
-                                                       "https://liveball.sx/news/ufc",
-                                                       "https://liveball.sx/news/tennis",
-                                                       "https://liveball.sx/news/formula-1",
-                                                       "https://liveball.sx/news/tennis-usopen",
-                                                       "https://liveball.sx/news/tennis-usopen2"
-                                                   ]
-                                  }
-                 }
+    "versionCode": 6,
+    "versionName": "2.4",
+    "apkUrl": "https://github.com/davitigg/CibMedia/releases/download/v2.4/cibmedia-2.4.apk",
+    "sha256": "8a00110b8822775b809a9799da26de26d616bb1db0e6d5228e985351219b13f8",
+    "sizeBytes": 27121355,
+    "notes": "Playback lookups are bounded and resolve faster; subtitles survive leaving the app.",
+    "playback": {
+        "videoDb": {
+            "enabled": true,
+            "hosts": [
+                "videodb.stream",
+                "em.kinoflix.co",
+                "em.filmix.stream"
+            ]
+        },
+        "xpass": {
+            "enabled": true,
+            "playerHost": "play.xpass.top",
+            "subtitleHost": "sub.1x2.space"
+        },
+        "liveball": {
+            "enabled": true,
+            "pageHosts": [
+                "liveball.sx"
+            ],
+            "keyPages": [
+                "https://liveball.sx/news/ufc",
+                "https://liveball.sx/news/tennis",
+                "https://liveball.sx/news/formula-1",
+                "https://liveball.sx/news/tennis-usopen",
+                "https://liveball.sx/news/tennis-usopen2"
+            ]
+        }
+    }
 }
